@@ -278,7 +278,9 @@
                 <%-- 반려 또는 취소된 경우 재기안 가능 --%>
                 <c:if test="${currentUser.id eq documentDetail.initiatorId and (documentDetail.status eq 'REJECTED' or documentDetail.status eq 'RECALLED')}">
                     <button class="btn btn-warning" onclick="redraftDocument(${documentDetail.docId})">수정 후 재기안</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteDocument(${documentDetail.docId})">문서 삭제</button>
                 </c:if>
+                
             </div>
         </div>
     </div>
@@ -361,6 +363,22 @@
             if (confirm("내용을 수정하여 다시 기안하시겠습니까?")) {
                 location.href = "/elecApproval/edit/" + docId;
             }
+        }
+
+        function deleteDocument(docId) {
+            if (!confirm("문서를 영구적으로 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다.")) {
+                return;
+            }
+
+            axios.delete("/elecApproval/delete/" + docId)
+                .then(response => {
+                    alert(response.data.message || '문서가 삭제되었습니다.');
+                    window.location.href = '/elecApproval'; // 목록으로 이동
+                })
+                .catch(error => {
+                    const msg = error.response ? error.response.data.message : error.message;
+                    alert('삭제 중 오류 발생: ' + msg);
+                });
         }
     </script>
 </body>

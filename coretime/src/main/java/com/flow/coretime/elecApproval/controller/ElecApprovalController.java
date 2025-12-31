@@ -1,5 +1,6 @@
 package com.flow.coretime.elecApproval.controller;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -127,7 +129,7 @@ public class ElecApprovalController {
         }
 
         @PostMapping("/redraft/{docId}")
-        public String redraftDocument(@PathVariable("docId") Long docId,
+        public String redraftDocument(@PathVariable("docId") int docId,
                         @ModelAttribute Document redraftData,
                         @AuthenticationPrincipal UserDetails userDetails,
                         RedirectAttributes redirectAttributes) {
@@ -205,6 +207,20 @@ public class ElecApprovalController {
                 } catch (Exception e) {
                         response.put("message", e.getMessage());
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                }
+        }
+
+        @DeleteMapping("/delete/{docId}")
+        public ResponseEntity<Map<String, String>> deleteDocument(
+                        @PathVariable(name = "docId") int docId,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                try {
+                        elecApprovalService.deleteDocument(docId, userDetails.getUsername());
+                        return ResponseEntity.ok(Collections.singletonMap("message", "문서가 성공적으로 삭제되었습니다."));
+                } catch (Exception e) {
+                        log.error("문서 삭제 중 오류가 발생했습니다.", e);
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                        .body(Collections.singletonMap("message", e.getMessage()));
                 }
         }
 

@@ -252,7 +252,7 @@ public class ElecApprovalService {
         }
 
         @Transactional
-        public void redraftDocument(Long docId, Document redraftData) {
+        public void redraftDocument(int docId, Document redraftData) {
 
                 log.info("redraftData: {}", redraftData);
 
@@ -285,5 +285,31 @@ public class ElecApprovalService {
 
         private void sendNotification(String userId, String message) {
                 messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", message);
+        }
+
+        @Transactional
+        public void deleteDocument(int docId, String loginId) {
+
+                // 1. 문서 정보 조회
+                Document document = elecApprovalMapper.getDocumentById(docId)
+                                .orElseThrow(() -> new RuntimeException("삭제할 문서를 찾을 수 없습니다."));
+
+                // 2. 권한 체크: 기안자 본인만 삭제 가능
+                if (!document.getInitiatorId().equals(loginId)) {
+                        throw new RuntimeException("본인이 작성한 문서만 삭제할 수 있습니다.");
+                }
+
+                // 3. 상태 체크: 상신취소(RECALLED) 상태일 때만 삭제 허용
+                if (!"RECALLED".equals(document.getStatus())) {
+                        throw new RuntimeException("상신취소 상태인 문서만 삭제가 가능합니다.");
+                }
+
+                // 4. 연관 데이터 삭제: 결재 이력(History)을 먼저 삭제해야 외래키 오류가 발생하지 않음
+                elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
+
+                // 5. 문서 삭제
+                elecApprovalMapper.deleteDocument(docId);
+
+                log.info("문서 및 결재선 삭제 완료 - 문서ID: {}, 실행자: {}", docId, loginId);
         }
 }

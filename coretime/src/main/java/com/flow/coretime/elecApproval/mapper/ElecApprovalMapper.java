@@ -34,4 +34,6 @@ public interface ElecApprovalMapper {
 
         int updateDocumentForRedraft(Document redraftData);
 
+        void deleteDocument(int docId);
+
 }

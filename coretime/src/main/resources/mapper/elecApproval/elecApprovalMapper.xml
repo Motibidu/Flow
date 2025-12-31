@@ -203,4 +203,9 @@
     ORDER BY
         D.DRAFT_DATE DESC
     </select>
+
+    <delete id="deleteDocument" parameterType="int">
+        DELETE FROM DOCUMENTS
+        WHERE DOC_ID = #{docId}
+    </delete>
 </mapper>

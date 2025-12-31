@@ -21,7 +21,7 @@ public interface ElecApprovalHistoryMapper {
         // 특정 문서의 모든 결재 이력 조회 메서드 추가
         List<ElecApprovalHistory> findApprovalHistoryByDocId(@Param("docId") int docId);
 
-        void deleteHistoryByDocId(Long docId);
-
         void insertApprovalHistories(@Param("histories") List<ElecApprovalHistory> histories);
+
+        void deleteHistoryByDocId(int docId);
 }

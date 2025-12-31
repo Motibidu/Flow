@@ -102,7 +102,7 @@
         LIMIT 1 
     </select>
 
-        <delete id="deleteHistoryByDocId" parameterType="long">
+        <delete id="deleteHistoryByDocId" parameterType="int">
             DELETE FROM APPROVAL_HISTORY
             WHERE DOC_ID = #{docId}
         </delete>
@@ -127,5 +127,6 @@
         ORDER BY
             AH.APPROVAL_ORDER ASC
     </select>
+
 
 </mapper>
