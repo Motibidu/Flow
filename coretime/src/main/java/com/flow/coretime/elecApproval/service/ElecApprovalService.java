@@ -20,6 +20,7 @@ import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
 import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
 import com.flow.coretime.users.mapper.UserMapper;
+import com.flow.coretime.users.model.User;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -212,28 +213,25 @@ public class ElecApprovalService {
 
                 log.info("redraftData: {}", redraftData);
 
-                // 1. 기존 문서의 상태를 'PENDING'으로 변경하고 내용 업데이트
-                redraftData.setDocId(docId.intValue());
+                // 1. 기안자의 부서 정보 가져오기
+                User initiator = userMapper.findById(redraftData.getInitiatorId())
+                                .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
+
+                // 2. redraftData에 기안자의 부서 정보 설정
+                redraftData.setInitiatorDepartment(initiator.getDepartment());
+
+                // 3. 기존 문서의 상태를 'PENDING'으로 변경하고 내용 업데이트
                 redraftData.setStatus("PENDING");
-                int updated = elecApprovalMapper.updateDocumentForRedraft(redraftData);
+                elecApprovalMapper.updateDocumentForRedraft(redraftData);
 
-                if (updated == 0) {
-                        log.info("여기가 에러다");
-                        throw new RuntimeException("문서 수정 권한이 없거나 수정할 수 없는 상태입니다.");
-                }
-                log.info("1");
-
-                // 2. 기존 결재 이력 삭제 (상신 취소나 반려 시 쌓였던 이력을 지우고 새로 시작)
+                // 4. 기존 결재 이력 삭제 (상신 취소나 반려 시 쌓였던 이력을 지우고 새로 시작)
                 elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
-                log.info("2");
 
-                // 3. 결재선 생성
+                // 5. 결재선 생성
                 List<ElecApprovalHistory> histories = createApprovalLineHistory(redraftData);
-                log.info("3");
 
-                // 4. 결재선 저장
+                // 6. 결재선 저장
                 elecApprovalHistoryMapper.insertApprovalHistories(histories);
-                log.info("4");
         }
 
 }
