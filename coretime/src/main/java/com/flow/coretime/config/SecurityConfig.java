@@ -1,7 +1,5 @@
 
-
 package com.flow.coretime.config;
-
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +22,9 @@ public class SecurityConfig {
 				.csrf().disable()
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers("/login", "/doLogin", "/login/findIdByEmail", "/error")
+
 						.permitAll()
+						.requestMatchers("/ws-stomp/**").permitAll()
 						.requestMatchers("/WEB-INF/**").permitAll()
 						.requestMatchers("/resources/**").permitAll()
 						.requestMatchers("/js/**", "/css/**").permitAll()

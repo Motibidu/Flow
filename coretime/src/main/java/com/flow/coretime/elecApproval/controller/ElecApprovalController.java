@@ -1,12 +1,9 @@
 package com.flow.coretime.elecApproval.controller;
 
-import java.text.SimpleDateFormat;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -83,25 +80,15 @@ public class ElecApprovalController {
 
         @PostMapping("/new")
         public String showElecApprovalNew(@ModelAttribute Document document,
-                        @RequestParam("docType") String docType,
-                        Model model,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
-                                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-                document.setDocType(DocumentType.VACATION_REQUEST);
 
-                document.setInitiatorId(currentUser.getId());
-                document.setTitle("휴가신청서");
-                document.setDraftDate(new Date());
-                document.setUpdatedAt(new Date());
-                document.setStatus("PENDING");
-                document.setInitiatorDepartment(currentUser.getDepartment());
-                document.setCurrentApproverName("admin");
+                // 1. 최소한의 사용자 식별 정보만 가져옴
+                String loginId = userDetails.getUsername();
 
-                elecApprovalService.createDocumentAndInitialApproval(document, "admin");
+                // 2. 비즈니스 로직은 Service에 전임 (document 객체와 기안자 ID만 전달)
+                elecApprovalService.createDocumentAndInitialApproval(document, loginId);
 
                 return "redirect:/elecApproval";
-
         }
 
         @GetMapping("/detail/{docId}")
@@ -119,6 +106,14 @@ public class ElecApprovalController {
                 List<ElecApprovalHistory> approvalHistories = elecApprovalService
                                 .getApprovalHistoriesForDocument(docId);
                 model.addAttribute("approvalHistories", approvalHistories);
+
+                String currentApproverId = approvalHistories.stream()
+                                .filter(h -> "PENDING".equals(h.getAction()))
+                                .findFirst()
+                                .map(ElecApprovalHistory::getApproverId)
+                                .orElse(null);
+
+                model.addAttribute("currentApproverId", currentApproverId);
 
                 return "elecApprovalDetail";
         }

@@ -5,6 +5,45 @@
 <head>
 <meta charset="UTF-8">
 <title>Insert title here</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // JSP 세션에 저장된 currentUserId를 자바스크립트 변수로 할당
+        const userId = "${currentUserId}"; 
+        
+        if (userId && userId.trim() !== "") {
+            console.log("웹소켓 연결 시도 중... (ID: " + userId + ")");
+            
+            const socket = new SockJS('/ws-stomp');
+            const stompClient = Stomp.over(socket);
+
+            // 디버그 로그가 너무 많으면 아래 주석 해제 (콘솔 깨끗해짐)
+            // stompClient.debug = null;
+
+            stompClient.connect({}, function (frame) {
+                console.log('연결 성공: ' + frame);
+                
+                // [구독] 내 계정 전용 알림 채널
+                // Spring의 convertAndSendToUser를 쓸 때는 경로를 아래와 같이 맞춥니다.
+                stompClient.subscribe('/user/queue/notifications', function (notification) {
+                    showNotificationBanner(notification.body);
+                });
+            }, function(error) {
+                console.error('웹소켓 연결 실패: ', error);
+            });
+        }
+    });
+
+    function showNotificationBanner(message) {
+        // 브라우저 기본 알림창 (추후 Toast UI 등으로 교체 권장)
+        alert("🔔 결재 알림\n" + message);
+        
+        // 여기에 상단 바 알림 아이콘 숫자를 +1 하는 로직을 추가할 수 있습니다.
+        // 예: document.getElementById('noti-count').innerText = ++count;
+    }
+</script>
 <style>
         .header {
 		width: 100%;
