@@ -194,13 +194,22 @@ public class ElecApprovalService {
                                 elecApprovalHistoryMapper.updateApprovalHistory(nextApprover);
 
                                 document.setStatus("IN_PROGRESS");
+
+                                sendNotification(nextApprover.getApproverId(),
+                                                "결재 대기: '" + document.getTitle() + "' 문서의 승인 차례입니다.");
                         } else {
                                 // 더 이상 결재자가 없는 경우: 최종 승인 완료
                                 document.setStatus("APPROVED");
+
+                                sendNotification(document.getInitiatorId(),
+                                                "결재 완료: '" + document.getTitle() + "' 문서가 최종 승인되었습니다! 🎉");
                         }
                 } else if ("REJECTED".equals(action)) {
                         // 반려인 경우: 문서 상태 변경 및 이후 결재선은 무시됨
                         document.setStatus("REJECTED");
+
+                        sendNotification(document.getInitiatorId(),
+                                        "결재 반려: '" + document.getTitle() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️");
                 }
 
                 // 4. 문서 최종 상태 반영
