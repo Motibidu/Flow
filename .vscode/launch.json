@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-CoretimeApplication<coretime>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.flow.coretime.CoretimeApplication",
+      "projectName": "coretime",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

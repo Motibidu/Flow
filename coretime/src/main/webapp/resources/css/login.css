@@ -1,0 +1,30 @@
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+.login__logo {
+  max-width: 200px;
+}
+
+.login-form__group {
+  height: 70px;
+  width: 400px;
+}
+
+.login-form__button-group {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.login-form__button {
+  width: 400px;
+}
+
+.login-form__error-message {
+  color: red;
+  text-align: center;
+}

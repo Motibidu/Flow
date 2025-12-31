@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper">
+
+    <resultMap id="approvalHistoryResultMap" type="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
+        <id property="historyId" column="HISTORY_ID"/>
+        <result property="docId" column="DOC_ID"/>
+        <result property="approverId" column="APPROVER_ID"/>
+        <result property="approvalOrder" column="APPROVAL_ORDER"/> 
+        <result property="action" column="ACTION"/>
+        <result property="commentText" column="COMMENTS"/>    
+        <result property="actionDate" column="ACTION_DATE"/>     
+        <result property="approverName" column="APPROVER_NAME"/>
+        <result property="approverRank" column="APPROVER_RANK"/>
+    </resultMap>
+
+    <insert id="insertApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory"
+        useGeneratedKeys="true" keyProperty="historyId">
+        INSERT INTO APPROVAL_HISTORY (
+            DOC_ID,
+            APPROVER_ID,
+            ACTION,
+            COMMENTS,
+            ACTION_DATE,
+            APPROVAL_ORDER
+        ) VALUES (
+            #{docId},
+            #{approverId},
+            #{action},
+            #{commentText}, NOW(),
+            #{approvalOrder} )
+    </insert>
+
+    <insert id="insertApprovalHistories">
+        INSERT INTO APPROVAL_HISTORY (
+            DOC_ID, 
+            APPROVER_ID, 
+            APPROVAL_ORDER, 
+            ACTION,
+            ACTION_DATE
+        ) VALUES 
+        <foreach collection="histories" item="h" separator=",">
+        (
+            #{h.docId}, 
+            #{h.approverId}, 
+            #{h.approvalOrder}, 
+            #{h.action},
+            #{h.actionDate}
+        )
+        </foreach>
+    </insert>
+
+    <update id="updateApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
+        UPDATE APPROVAL_HISTORY
+        SET
+            ACTION = #{action},
+            COMMENTS = #{commentText}, 
+            ACTION_DATE = NOW()
+        WHERE
+            HISTORY_ID = #{historyId}
+    </update>
+
+    <select id="findCurrentPendingApproval" resultMap="approvalHistoryResultMap">
+        SELECT
+            HISTORY_ID,
+            DOC_ID,
+            APPROVER_ID,
+            APPROVAL_ORDER,
+            ACTION,
+            COMMENTS,
+            ACTION_DATE
+        FROM
+            APPROVAL_HISTORY
+        WHERE
+            DOC_ID = #{docId}
+            AND ACTION = 'PENDING'
+        ORDER BY
+            APPROVAL_ORDER ASC
+        LIMIT 1 
+    </select>
+
+    <select id="findNextApprover" resultMap="approvalHistoryResultMap">
+        SELECT
+            AH.HISTORY_ID,
+            AH.DOC_ID,
+            AH.APPROVER_ID,
+            AH.APPROVAL_ORDER,
+            AH.ACTION,
+            AH.COMMENTS,
+            AH.ACTION_DATE,
+            U.NAME AS APPROVER_NAME,
+            U.RANK_NAME AS APPROVER_RANK FROM
+            APPROVAL_HISTORY AH
+        JOIN
+            USERS U ON AH.APPROVER_ID = U.ID
+        WHERE
+            AH.DOC_ID = #{docId}
+            AND AH.APPROVAL_ORDER = #{currentOrder} + 1
+        ORDER BY
+            AH.APPROVAL_ORDER ASC
+        LIMIT 1 
+    </select>
+
+        <delete id="deleteHistoryByDocId" parameterType="long">
+            DELETE FROM APPROVAL_HISTORY
+            WHERE DOC_ID = #{docId}
+        </delete>
+
+    <select id="findApprovalHistoryByDocId" resultMap="approvalHistoryResultMap">
+        SELECT
+            AH.HISTORY_ID,
+            AH.DOC_ID,
+            AH.APPROVER_ID,
+            AH.APPROVAL_ORDER,
+            AH.ACTION,
+            AH.COMMENTS,
+            AH.ACTION_DATE,
+            U.NAME AS APPROVER_NAME,
+            U.RANK_NAME AS APPROVER_RANK
+        FROM
+            APPROVAL_HISTORY AH
+        JOIN
+            USERS U ON AH.APPROVER_ID = U.ID
+        WHERE
+            AH.DOC_ID = #{docId}
+        ORDER BY
+            AH.APPROVAL_ORDER ASC
+    </select>
+
+</mapper>

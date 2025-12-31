@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.flow.coretime.users.mapper.UserMapper">
+
+	<select id="findById" resultType="com.flow.coretime.users.model.User">
+        SELECT 
+            NAME, 
+            ID, 
+            PASSWORD, 
+            EMAIL, 
+            TEL, 
+            RANK_NAME,
+            DEPARTMENT, 
+            ROLE, 
+            PROFILEIMAGEPATH
+        FROM USERS
+        WHERE ID = #{id}
+    </select>
+
+    <select id="findUserByDeptAndRank" resultType="String">
+        SELECT id
+        FROM users
+        WHERE department = #{department}
+        AND rank_name = #{rankName}
+        ORDER BY created_at ASC
+        LIMIT 1 
+    </select>
+
+	<insert id="insertUser" parameterType="com.flow.coretime.users.model.User">
+        INSERT INTO USERS
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            NAME,
+            ID,
+            PASSWORD,
+            EMAIL,
+            TEL,
+            RANK_NAME,
+            DEPARTMENT,
+            BIRTH,
+            UPDATED_AT,
+            CREATED_AT,
+            ROLE,
+            <if test="profileImagePath != null and profileImagePath != ''">
+                PROFILEIMAGEPATH,
+            </if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            #{name},
+            #{id},
+            #{password},
+            #{email},
+            #{tel},
+            #{rank},
+            #{department},
+            #{birth},
+            #{updatedAt},
+            #{createdAt},
+            #{role},
+            <if test="profileImagePath != null and profileImagePath != ''">
+                #{profileImagePath},
+            </if>
+        </trim>
+    </insert>
+    
+    <select id="findAllUsers" resultType="com.flow.coretime.users.model.User">
+        SELECT
+            NAME, ID, PASSWORD, EMAIL, TEL, RANK_NAME, DEPARTMENT, BIRTH, UPDATED_AT, CREATED_AT, ROLE AS ROLE
+        FROM USERS
+        ORDER BY CREATED_AT DESC
+    </select>
+    
+    <select id="countById" resultType="int">
+        SELECT COUNT(*)
+        FROM USERS
+        WHERE ID = #{id}
+    </select>
+
+    
+    <delete id="deleteUsersByIds" parameterType="java.util.List">
+        DELETE FROM users
+        WHERE id IN
+        <foreach item="id" collection="list" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <update id="updateUserByExistingId" parameterType="com.flow.coretime.users.model.User">
+    	UPDATE users
+    		<set>
+    			id= #{newUserInfo.id},
+    			name= #{newUserInfo.name},
+    			email= #{newUserInfo.email},
+    			tel= #{newUserInfo.tel},
+    			rank= #{newUserInfo.rank},
+    			department= #{newUserInfo.department},
+    			updatedAt= #{newUserInfo.updatedAt},
+                <if test="newUserInfo.profileImagePath != null and newUserInfo.profileImagePath != ''">
+                    profileImagePath = #{newUserInfo.profileImagePath},
+                </if>
+            </set>
+    		WHERE
+    			id= #{existingId}
+    			
+    </update>
+</mapper>

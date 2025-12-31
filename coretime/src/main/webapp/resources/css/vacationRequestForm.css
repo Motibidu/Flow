@@ -1,0 +1,144 @@
+
+    /* 인라인 스타일을 여기에 정의하거나, vacationRequestForm.css 파일에 추가하세요 */
+    body {
+        font-family: 'Malgun Gothic', Dotum, Arial, Tahoma;
+        font-size: 9pt;
+        line-height: 1.5; /* 단락 간 간격 추가 */
+        color: #333; /* 기본 텍스트 색상 */
+    }
+    .container {
+        width: 800px;
+        margin: 20px auto; /* 상하 여백 추가 */
+        border: 1px solid #ccc;
+        padding: 30px; /* 패딩 증가 */
+        box-shadow: 0 0 10px rgba(0,0,0,0.05); /* 그림자 효과 추가 */
+        background-color: #fff;
+    }
+    h1 {
+        text-align: center;
+        font-size: 2.5em; /* 글자 크기 조정 */
+        color: #333;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #eee; /* 제목 아래 선 추가 */
+        padding-bottom: 10px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px; /* 테이블 하단 여백 증가 */
+    }
+    table th, table td {
+        padding: 10px; /* 패딩 증가 */
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+    table th {
+        background-color: #e0e0e0;
+        font-weight: bold;
+        text-align: center;
+        width: 120px; /* 기안자, 소속 등 헤더 너비 고정 */
+    }
+    table td {
+        background-color: #f9f9f9; /* 데이터 셀 배경색 */
+    }
+    table tbody tr:nth-child(even) td {
+        background-color: #f5f5f5; /* 짝수 행 배경색 */
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="tel"],
+    .form-group select,
+    .form-group textarea {
+        width: calc(100% - 22px); /* 패딩 고려한 너비 */
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+        font-size: 1em;
+    }
+    .form-group textarea {
+        resize: vertical; /* 세로 크기 조절 허용 */
+    }
+    .form-actions {
+        text-align: center;
+        margin-top: 30px;
+    }
+    .submit-button, .cancel-button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+        margin: 0 5px;
+    }
+    .submit-button {
+        background-color: #007bff;
+        color: white;
+    }
+    .submit-button:hover {
+        background-color: #0056b3;
+    }
+    .cancel-button {
+        background-color: #6c757d;
+        color: white;
+    }
+    .cancel-button:hover {
+        background-color: #5a6268;
+    }
+    .red-star {
+        color: red;
+        margin-right: 3px;
+    }
+    .approval-line {
+        margin-top: 25px;
+        margin-bottom: 25px;
+        border: 1px solid #ddd; /* 결재선 전체 테두리 */
+    }
+    .approval-line th, .approval-line td {
+        padding: 0; /* 내부 테이블 패딩은 0으로 */
+        text-align: center;
+        border: 1px solid #ddd;
+    }
+    .approval-line th {
+        width: 100px;
+        background-color: #e0e0e0;
+        vertical-align: middle;
+        font-weight: bold;
+        height: 80px; /* 높이 고정 */
+    }
+    .approval-sub-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .approval-sub-table td {
+        padding: 5px;
+        border: none; /* 내부 테이블의 셀 테두리 제거 */
+    }
+    .approval-date {
+        font-size: 0.8em;
+        color: #666;
+    }
+    .info-section {
+        font-size: 0.9em;
+        line-height: 1.6;
+        color: #555;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border: 1px dashed #e0e0e0;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    .info-section strong {
+        color: #333;
+    }

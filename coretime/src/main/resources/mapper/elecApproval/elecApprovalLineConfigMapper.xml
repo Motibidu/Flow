@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper">
+        <select id="getApprovalConfigList" resultType="com.flow.coretime.elecApproval.model.ElecApprovalLineConfig">
+                SELECT 
+                        CONFIG_ID,
+                        DOC_TYPE,
+                        TARGET_RANK,
+                        DEPT_TYPE,
+                        APPROVAL_ORDER,
+                        DESCRIPTION
+                FROM 
+                        APPROVAL_LINE_CONFIG
+                WHERE 
+                        DOC_TYPE = #{docType}
+                ORDER BY 
+                        APPROVAL_ORDER ASC
+        </select>
+</mapper>
