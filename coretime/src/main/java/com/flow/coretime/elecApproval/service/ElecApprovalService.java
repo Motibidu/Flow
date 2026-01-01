@@ -20,6 +20,7 @@ import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
 import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
 import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
+import com.flow.coretime.notification.NotificationService;
 import com.flow.coretime.users.mapper.UserMapper;
 import com.flow.coretime.users.model.User;
 import com.flow.coretime.users.service.UserService;
@@ -39,6 +40,7 @@ public class ElecApprovalService {
         private final ElecApprovalLineConfigMapper elecApprovalLineConfigMapper;
         private final UserMapper userMapper;
         private final SimpMessagingTemplate messagingTemplate;
+        private final NotificationService notificationService;
 
         // 수신자의 결재대기 목록, docId를
         public List<Document> getPendingApprovals(String currentUserId) {
@@ -284,7 +286,9 @@ public class ElecApprovalService {
         }
 
         private void sendNotification(String userId, String message) {
-                messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", message);
+                // messagingTemplate.convertAndSendToUser(userId, "/queue/notifications",
+                // message);
+                notificationService.send(userId, message);
         }
 
         @Transactional

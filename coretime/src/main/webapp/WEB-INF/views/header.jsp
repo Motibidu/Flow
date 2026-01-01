@@ -9,40 +9,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // JSP 세션에 저장된 currentUserId를 자바스크립트 변수로 할당
-        const userId = "${currentUserId}"; 
-        
-        if (userId && userId.trim() !== "") {
-            console.log("웹소켓 연결 시도 중... (ID: " + userId + ")");
-            
-            const socket = new SockJS('/ws-stomp');
-            const stompClient = Stomp.over(socket);
+	console.log("SSE Notification System Loaded");
+    
+	document.addEventListener("DOMContentLoaded", function() {
+		const userId = "${currentUserId}";
+		
+		if (userId && userId !== "") {
+		// 1. SSE 연결 생성
+		const eventSource = new EventSource('/api/notifications/subscribe?userId=' + userId);
 
-            // 디버그 로그가 너무 많으면 아래 주석 해제 (콘솔 깨끗해짐)
-            // stompClient.debug = null;
+		// 2. 서버에서 보낸 'notification' 이벤트 수신
+		eventSource.addEventListener("notification", function(event) {
+			console.log("알림 수신:", event);
+			alert("🔔 알림: " + event.data);
+		});
 
-            stompClient.connect({}, function (frame) {
-                console.log('연결 성공: ' + frame);
-                
-                // [구독] 내 계정 전용 알림 채널
-                // Spring의 convertAndSendToUser를 쓸 때는 경로를 아래와 같이 맞춥니다.
-                stompClient.subscribe('/user/queue/notifications', function (notification) {
-                    showNotificationBanner(notification.body);
-                });
-            }, function(error) {
-                console.error('웹소켓 연결 실패: ', error);
-            });
-        }
-    });
+		// 연결 유지 확인용 (선택)
+		eventSource.addEventListener("connect", function(event) {
+			console.log("SSE 연결 성공");
+		});
 
-    function showNotificationBanner(message) {
-        // 브라우저 기본 알림창 (추후 Toast UI 등으로 교체 권장)
-        alert("🔔 결재 알림\n" + message);
-        
-        // 여기에 상단 바 알림 아이콘 숫자를 +1 하는 로직을 추가할 수 있습니다.
-        // 예: document.getElementById('noti-count').innerText = ++count;
-    }
+		// 에러 처리
+		eventSource.onerror = function(error) {
+			console.error("SSE 연결 에러:", error);
+			// 브라우저가 자동으로 재연결을 시도합니다.
+		};
+		}
+	});
 </script>
 <style>
         .header {

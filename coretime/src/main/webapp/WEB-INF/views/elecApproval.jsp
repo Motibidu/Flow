@@ -8,7 +8,6 @@
 <head>
 <meta charset="UTF-8">
 <title>전자결재 시스템</title>
-<%@ include file="/WEB-INF/views/common/common-header.jsp" %>
 
 <style>
     /* ----- 기본 및 레이아웃 ----- */
