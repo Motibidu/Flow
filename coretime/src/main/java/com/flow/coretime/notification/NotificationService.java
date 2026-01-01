@@ -1,6 +1,7 @@
 package com.flow.coretime.notification;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,13 +9,18 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.flow.coretime.notification.mapper.NotificationMapper;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @Slf4j
+@RequiredArgsConstructor
+@Service
 public class NotificationService {
     // 사용자 ID별로 SseEmitter를 저장 (동시성 고려)
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final NotificationMapper notificationMapper;
 
     public SseEmitter subscribe(String userId) {
         // 만료 시간 1시간 설정
@@ -39,13 +45,23 @@ public class NotificationService {
         return emitter;
     }
 
-    public void send(String userId, Object data) {
+    public void send(String userId, String message, String url) {
+
+        // 1. DB에 먼저 저장 (영속성 확보)
+        NotificationDTO notifcationDto = NotificationDTO.create(userId, message, url);
+        notificationMapper.insertNotification(notifcationDto);
+
+        // 2. 접속 중인 경우 실시간 발송 (SSE)
         SseEmitter emitter = emitters.get(userId);
         if (emitter != null) {
             try {
+                Map<String, String> data = new HashMap<>();
+                data.put("message", message);
+                data.put("targetUrl", url);
+
                 emitter.send(SseEmitter.event()
                         .name("notification")
-                        .data("한글 테스트 메시지"));
+                        .data(data));
             } catch (IOException e) {
                 emitters.remove(userId);
                 log.error("알림 전송 실패", e);

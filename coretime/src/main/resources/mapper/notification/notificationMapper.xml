@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.flow.coretime.notification.mapper.NotificationMapper">
+        <insert id="insertNotification" parameterType="com.flow.coretime.notification.NotificationDTO">
+                INSERT INTO notification (recipient_id, message, target_url, is_read)
+                VALUES (#{recipientId}, #{message}, #{targetUrl}, #{isRead}) 
+        </insert>
+
+        <select id="selectUnreadList" resultType="com.flow.coretime.notification.NotificationDTO">
+                SELECT notif_id, recipient_id, message, target_url, is_read, created_at
+                FROM notification
+                WHERE recipient_id = #{userId} AND is_read = 'UNREAD'
+                ORDER BY created_at DESC
+        </select>
+
+        <update id="updateReadStatus">
+                UPDATE notification 
+                SET is_read = 'READ' 
+                WHERE notif_id = #{notifId}
+        </update>
+</mapper>

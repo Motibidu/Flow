@@ -63,42 +63,42 @@ public class ElecApprovalService {
 
         // 전자결재 등록하기
         @Transactional
-        public void createDocumentAndInitialApproval(Document document, String loginId) {
+        public void createDocumentAndInitialApproval(Document documentDetail, String loginId) {
                 // 1. 기안자 정보 상세 조회 (이름, 부서 등)
                 User initiator = userService.findById(loginId)
                                 .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
 
                 // 2. 누락된 필드 채우기 (Service 담당)
-                document.setInitiatorId(initiator.getId());
-                document.setInitiatorName(initiator.getName());
-                document.setInitiatorRank(initiator.getRankName());
-                document.setInitiatorDepartment(initiator.getDepartment());
+                documentDetail.setInitiatorId(initiator.getId());
+                documentDetail.setInitiatorName(initiator.getName());
+                documentDetail.setInitiatorRank(initiator.getRankName());
+                documentDetail.setInitiatorDepartment(initiator.getDepartment());
 
-                document.setDraftDate(new Date());
-                document.setUpdatedAt(new Date());
-                document.setStatus("PENDING");
+                documentDetail.setDraftDate(new Date());
+                documentDetail.setUpdatedAt(new Date());
+                documentDetail.setStatus("PENDING");
 
                 // [중요] 제목이 null로 넘어올 경우를 대비한 방어 로직
-                if (document.getTitle() == null || document.getTitle().trim().isEmpty()) {
+                if (documentDetail.getTitle() == null || documentDetail.getTitle().trim().isEmpty()) {
                         String autoTitle = String.format("[%s] %s님의 결재 요청",
-                                        document.getDocType(), initiator.getName());
-                        document.setTitle(autoTitle);
+                                        documentDetail.getDocType(), initiator.getName());
+                        documentDetail.setTitle(autoTitle);
                 }
 
                 // 3. 문서 저장 (DB insert 후 DOC_ID가 생성됨)
-                elecApprovalMapper.insertDocument(document);
+                elecApprovalMapper.insertDocument(documentDetail);
 
                 // 4. 결재선 생성 및 저장
-                List<ElecApprovalHistory> histories = createApprovalLineHistory(document);
+                List<ElecApprovalHistory> histories = createApprovalLineHistory(documentDetail);
                 elecApprovalHistoryMapper.insertApprovalHistories(histories);
 
                 // 5. 첫 번째 결재자에게 알림 전송
                 if (!histories.isEmpty()) {
-                        String initialApproverId = histories.get(0).getApproverId();
-                        log.info("첫 번째 결재자 알림 발송 대상: {}", initialApproverId);
+                        String firstApproverId = histories.get(0).getApproverId();
+                        log.info("첫 번째 결재자 알림 발송 대상: {}", firstApproverId);
 
-                        sendNotification(initialApproverId,
-                                        "새로운 결재 문서가 도착했습니다: " + document.getTitle());
+                        notificationService.send(firstApproverId, "새로운 결재문서가 도착했습니다." + documentDetail.getTitle(),
+                                        "/elecApproval/detail/" + documentDetail.getDocId());
                 }
         }
 
@@ -182,36 +182,40 @@ public class ElecApprovalService {
                 currentPendingApproval.setActionDate(new Date()); // 실제 결재 시점 기록
                 elecApprovalHistoryMapper.updateApprovalHistory(currentPendingApproval);
 
-                // 3. 결재 액션에 따른 후속 처리
+                // 3. '결재'인 경우
                 if ("APPROVED".equals(action)) {
-                        // 다음 결재자 찾기
-                        Optional<ElecApprovalHistory> nextApproverOpt = elecApprovalHistoryMapper.findNextApprover(
-                                        docId, currentPendingApproval.getApprovalOrder());
+                        Optional<ElecApprovalHistory> nextApprovalHistoryOpt = elecApprovalHistoryMapper
+                                        .findNextApprover(
+                                                        docId, currentPendingApproval.getApprovalOrder());
 
-                        if (nextApproverOpt.isPresent()) {
+                        if (nextApprovalHistoryOpt.isPresent()) {
                                 // 다음 결재자가 있는 경우: 상태를 PENDING으로 활성화
-                                ElecApprovalHistory nextApprover = nextApproverOpt.get();
-                                nextApprover.setAction("PENDING");
-                                // nextApprover.setActionDate(null); // 아직 결재 전이므로 null 유지
-                                elecApprovalHistoryMapper.updateApprovalHistory(nextApprover);
+                                ElecApprovalHistory nextApprovalHistory = nextApprovalHistoryOpt.get();
+                                nextApprovalHistory.setAction("PENDING");
+                                nextApprovalHistory.setActionDate(null);
+                                elecApprovalHistoryMapper.updateApprovalHistory(nextApprovalHistory);
 
                                 document.setStatus("IN_PROGRESS");
 
-                                sendNotification(nextApprover.getApproverId(),
-                                                "결재 대기: '" + document.getTitle() + "' 문서의 승인 차례입니다.");
+                                notificationService.send(nextApprovalHistory.getApproverId(),
+                                                "결재 대기: '" + document.getTitle() + "' 문서의 승인 차례입니다.",
+                                                "/elecApproval/detail/" + document.getDocId());
                         } else {
                                 // 더 이상 결재자가 없는 경우: 최종 승인 완료
                                 document.setStatus("APPROVED");
 
-                                sendNotification(document.getInitiatorId(),
-                                                "결재 완료: '" + document.getTitle() + "' 문서가 최종 승인되었습니다! 🎉");
+                                notificationService.send(document.getInitiatorId(),
+                                                "결재 완료: '" + document.getTitle() + "' 문서가 최종 승인되었습니다! 🎉",
+                                                "/elecApproval/detail/" + document.getDocId());
                         }
+                        // 4. 반려인 경우: 문서 상태 변경 및 이후 결재선은 무시됨
                 } else if ("REJECTED".equals(action)) {
-                        // 반려인 경우: 문서 상태 변경 및 이후 결재선은 무시됨
+
                         document.setStatus("REJECTED");
 
-                        sendNotification(document.getInitiatorId(),
-                                        "결재 반려: '" + document.getTitle() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️");
+                        notificationService.send(document.getInitiatorId(),
+                                        "결재 반려: '" + document.getTitle() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
+                                        "/elecApproval/detail/" + document.getDocId());
                 }
 
                 // 4. 문서 최종 상태 반영
@@ -254,26 +258,26 @@ public class ElecApprovalService {
         }
 
         @Transactional
-        public void redraftDocument(int docId, Document redraftData) {
+        public void redraftDocument(int docId, Document redfraftDocumentDetail) {
 
-                log.info("redraftData: {}", redraftData);
+                log.info("redraftData: {}", redfraftDocumentDetail);
 
                 // 1. 기안자의 부서 정보 가져오기
-                User initiator = userMapper.findById(redraftData.getInitiatorId())
+                User initiator = userMapper.findById(redfraftDocumentDetail.getInitiatorId())
                                 .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
 
                 // 2. redraftData에 기안자의 부서 정보 설정
-                redraftData.setInitiatorDepartment(initiator.getDepartment());
+                redfraftDocumentDetail.setInitiatorDepartment(initiator.getDepartment());
 
                 // 3. 기존 문서의 상태를 'PENDING'으로 변경하고 내용 업데이트
-                redraftData.setStatus("PENDING");
-                elecApprovalMapper.updateDocumentForRedraft(redraftData);
+                redfraftDocumentDetail.setStatus("PENDING");
+                elecApprovalMapper.updateDocumentForRedraft(redfraftDocumentDetail);
 
                 // 4. 기존 결재 이력 삭제 (상신 취소나 반려 시 쌓였던 이력을 지우고 새로 시작)
                 elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
 
                 // 5. 결재선 생성
-                List<ElecApprovalHistory> histories = createApprovalLineHistory(redraftData);
+                List<ElecApprovalHistory> histories = createApprovalLineHistory(redfraftDocumentDetail);
 
                 // 6. 결재선 저장
                 elecApprovalHistoryMapper.insertApprovalHistories(histories);
@@ -281,14 +285,9 @@ public class ElecApprovalService {
                 // 7. 웹소켓 메시지 전송
                 String firstApproverId = histories.get(0).getApproverId();
 
-                // 8. 결재자에게 웹소켓 메시지 전송
-                sendNotification(firstApproverId, "새로운 결재 문서가 도착했습니다: " + redraftData.getTitle());
-        }
-
-        private void sendNotification(String userId, String message) {
-                // messagingTemplate.convertAndSendToUser(userId, "/queue/notifications",
-                // message);
-                notificationService.send(userId, message);
+                // 8. 결재자에게 SSE 메시지 전송
+                notificationService.send(firstApproverId, "새로운 결재문서가 도착했습니다." + redfraftDocumentDetail.getTitle(),
+                                "/elecApproval/detail/" + docId);
         }
 
         @Transactional

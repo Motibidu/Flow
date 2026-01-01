@@ -56,7 +56,7 @@
         SET
             ACTION = #{action},
             COMMENTS = #{commentText}, 
-            ACTION_DATE = NOW()
+            ACTION_DATE = #{actionDate}
         WHERE
             HISTORY_ID = #{historyId}
     </update>
