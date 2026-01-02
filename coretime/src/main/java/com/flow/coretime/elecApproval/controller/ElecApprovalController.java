@@ -46,9 +46,7 @@ public class ElecApprovalController {
         @GetMapping
         public String showElecApproval(@AuthenticationPrincipal UserDetails userDetails, Model model) {
                 String currentUserId = userDetails.getUsername();
-                model.addAttribute("currentUserId", currentUserId);
-                model.addAttribute("currentUserAuthority",
-                                userDetails.getAuthorities().stream().findFirst().get().getAuthority().trim());
+                
 
                 List<Document> pendingApprovals = elecApprovalService.getPendingApprovals(currentUserId);
                 model.addAttribute("pendingApprovals", pendingApprovals);

@@ -12,8 +12,11 @@ public interface NotificationMapper {
     void insertNotification(NotificationDTO notification);
 
     // 읽지 않은 알림 목록 조회
-    List<NotificationDTO> selectUnreadList(String userId);
+    List<NotificationDTO> selectRecentNotifications(String userId);
 
     // 알림 읽음 처리
-    void updateReadStatus(Long notifId);
+    void markAsRead(Long notifId);
+
+    void markAllAsRead(String userId);
+
 }

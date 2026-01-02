@@ -9,42 +9,169 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
 <script>
-	console.log("SSE Notification System Loaded");
-    
-	document.addEventListener("DOMContentLoaded", function() {
-		const userId = "${currentUserId}";
-		
-		if (userId && userId !== "") {
-		// 1. SSE 연결 생성
-		const eventSource = new EventSource('/api/notifications/subscribe?userId=' + userId);
+    console.log("SSE Notification System Loaded");
 
-		// 2. 서버에서 보낸 'notification' 이벤트 수신
-		eventSource.addEventListener("notification", function(event) {
-			console.log("알림 수신:", event);
-			
-			try {
-				// 서버에서 Map(JSON)으로 보냈으므로 파싱 가능
-				const data = JSON.parse(event.data);
-				showToast(data.message, data.targetUrl);
-			} catch (e) {
-				// 만약 서버에서 순수 문자열을 보냈을 경우를 대비한 예외 처리
-				console.warn("JSON 파싱 실패, 일반 문자열로 처리합니다.");
-				showToast(event.data, "#");
-			}
-		});
+    // 전역 변수로 선언하여 모든 함수에서 접근 가능하게 합니다.
+    let userId, dropdown, listContainer;
 
-		// 연결 유지 확인용 (선택)
-		eventSource.addEventListener("connect", function(event) {
-			console.log("SSE 연결 성공");
-		});
+    document.addEventListener("DOMContentLoaded", function() {
+        userId = "${currentUserId}";
+        const bell = document.getElementById('notif-bell');
+        dropdown = document.getElementById('notif-dropdown');
+        listContainer = document.getElementById('notif-list-container');
 
-		// 에러 처리
-		eventSource.onerror = function(error) {
-			console.error("SSE 연결 에러:", error);
-			// 브라우저가 자동으로 재연결을 시도합니다.
-		};
-		}
-	});
+        if (userId && userId !== "") {
+            // 1. SSE 연결 생성
+            const eventSource = new EventSource('/api/notifications/subscribe?userId=' + userId);
+
+            // 2. 서버에서 보낸 'notification' 이벤트 수신
+            eventSource.addEventListener("notification", function(event) {
+                const data = JSON.parse(event.data);
+                showToast(data.message, data.targetUrl);
+
+                const badge = document.getElementById('notif-badge');
+                if (badge) badge.style.display = 'block';
+                
+                if (dropdown.style.display === 'block') {
+                    loadNotifications(); 
+                }
+            });
+
+            eventSource.addEventListener("connect", function(event) {
+                console.log("SSE 연결 성공");
+            });
+
+            eventSource.onerror = function(error) {
+                console.error("SSE 연결 에러:", error);
+            };
+        }
+
+        // 1. 종 클릭 시 목록 토글
+        if (bell) {
+            bell.onclick = function(e) {
+                e.stopPropagation(); 
+                const isVisible = dropdown.style.display === 'block';
+                
+                if (!isVisible) {
+                    loadNotifications(); 
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            };
+        }
+
+        // 2. 외부 클릭 시 닫기
+        document.addEventListener('click', function() {
+            if (dropdown) dropdown.style.display = 'none';
+        });
+    }); // DOMContentLoaded 끝 (괄호 체크 완료)
+
+    // 3. 서버에서 알림 목록 가져오기
+    function loadNotifications() {
+        if (!userId) return;
+        
+        fetch('/api/notifications/recent-notifications?userId=' + userId)
+            .then(res => res.json())
+            .then(data => {
+                listContainer.innerHTML = ''; 
+                
+                if (data.length === 0) {
+                    listContainer.innerHTML = '<div class="notif-empty">알림이 없습니다.</div>';
+                    return;
+                }
+
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'notif-item' + (item.isRead === 'UNREAD' ? ' unread' : '');
+                    div.innerHTML = 
+                        
+                        '<div class="notif-item-msg">' + 
+                            '<span class="notif-item-id">' + item.notifId + '</span>. ' + item.message + 
+                        '</div>' +
+                        '<div class="notif-item-title">제목: ' + item.title + '</div>'+
+                        '<div class="notif-item-date">' + formatDate(item.createdAt) + '</div>';
+                    
+                    // 클릭 시 로직 수정
+                    div.onclick = function() {
+                        if (item.isRead === 'UNREAD') {
+                            // 1. 아직 안 읽은 알림이라면 서버에 읽음 처리 요청
+                            fetch('/api/notifications/mark-read?notifId=' + item.notifId, { method: 'POST' })
+                                .then(res => {
+                                    if (res.ok) {
+                                        // 2. 읽음 처리 성공 시 페이지 이동
+                                        if (item.targetUrl) location.href = item.targetUrl;
+                                    }
+                                })
+                                .catch(err => console.error("읽음 처리 실패:", err));
+                        } else {
+                            // 3. 이미 읽은 알림이라면 바로 이동
+                            if (item.targetUrl) location.href = item.targetUrl;
+                        }
+                    };
+                    listContainer.appendChild(div);
+                });
+            })
+            .catch(err => console.error("알림 로드 실패:", err));
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return "";
+        const date = new Date(dateStr);
+        return (date.getMonth() + 1) + "월 " + date.getDate() + "일 "+ date.getHours() + "시 " + date.getMinutes() + "분";
+    }
+
+    function showToast(message, targetUrl) {
+        let container = document.getElementById('notification-container');
+        if (!container) return;
+
+        // 1. 토스트 컨테이너 생성
+        const toast = document.createElement('div');
+        toast.className = 'notif-toast';
+
+        // 2. 닫기 버튼 생성
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'toast-close-btn';
+        closeBtn.innerHTML = '&times;'; // '×' 기호
+
+        // 3. 닫기 버튼 클릭 이벤트 (이벤트 전파 차단 필수)
+        closeBtn.onclick = function(e) {
+            e.stopPropagation(); // 부모(toast)의 onclick 이벤트가 실행되지 않게 함
+            removeToast(toast);
+        };
+
+        // 4. 메시지 영역 생성
+        const msgContent = document.createElement('div');
+        msgContent.className = 'notif-message';
+        msgContent.innerHTML = message;
+
+        // 5. 토스트 조립
+        toast.appendChild(closeBtn);
+        toast.appendChild(msgContent);
+
+        // 6. 토스트 전체 클릭 시 이동 (닫기 버튼 클릭 시에는 실행 안 됨)
+        toast.onclick = function() {
+            if (targetUrl && targetUrl !== "#") {
+                window.location.href = targetUrl;
+            }
+        };
+
+        container.appendChild(toast);
+
+        // 7. 10초 뒤 자동 삭제
+        setTimeout(() => {
+            if (toast.parentNode) removeToast(toast);
+        }, 10000);
+    }
+
+    // 공통 토스트 제거 함수 (애니메이션 포함)
+    function removeToast(toastElement) {
+        toastElement.style.opacity = '0';
+        toastElement.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toastElement.parentNode) toastElement.remove();
+        }, 500);
+    }
 </script>
 <style>
         .header {
@@ -100,15 +227,15 @@
 	}
 
 	.notif-title {
-	font-weight: bold;
-	font-size: 14px;
-	margin-bottom: 5px;
-	color: #333;
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 5px;
+        color: #333;
 	}
 
 	.notif-message {
-	font-size: 13px;
-	color: #666;
+        font-size: 13px;
+        color: #666;
 	}
 
 	/* 애니메이션 효과 */
@@ -116,7 +243,52 @@
 	from { transform: translateX(100%); opacity: 0; }
 	to { transform: translateX(0); opacity: 1; }
 	}
+
+	.notif-wrapper { position: relative; display: inline-block; margin-right: 20px; }
+	.notif-bell-container { position: relative; }
+	.notif-badge {
+	position: absolute; top: 0; right: 0;
+	width: 10px; height: 10px;
+	background-color: red; border-radius: 50%; border: 2px solid white;
+	}
+	.notif-dropdown {
+	position: absolute; top: 40px; right: 0;
+	width: 300px; background: white; border: 1px solid #ddd;
+	box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 1000;
+	}
+	.notif-header { padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; font-size: 0.9rem; }
+	.notif-footer { display: block; text-align: center; padding: 10px; font-size: 0.8rem; color: #007bff; text-decoration: none; border-top: 1px solid #eee; }
+	.notif-item { padding: 12px 15px; border-bottom: 1px solid #f9f9f9; cursor: pointer; transition: background 0.2s; }
+	.notif-item:hover { background-color: #f0f7ff; }
+	.notif-item.unread { background-color: #fcfcfc; border-left: 3px solid #007bff; }
+	.notif-item-msg { font-size: 0.85rem; color: #333; margin-bottom: 3px; }
+    .notif-item-title { font-size: 0.85rem; color: #333; margin-bottom: 3px; }
+	.notif-item-date { font-size: 0.75rem; color: #999; }
+	.notif-empty { padding: 20px; text-align: center; color: #999; font-size: 0.85rem; }
+
+    /* 토스트 내 닫기 버튼 스타일 */
+    .notif-toast {
+        position: relative !important; /* 부모 요소는 반드시 relative여야 합니다 */
+        padding-right: 35px !important; /* X 버튼이 들어갈 공간 확보 */
+        }
+
+    .toast-close-btn {
+        position: absolute !important;
+        top: 5px !important;
+        right: 10px !important;
+        font-size: 22px !important; /* 크기 키움 */
+        font-weight: bold !important;
+        color: #333 !important; /* 더 진한 색상으로 변경 */
+        cursor: pointer !important;
+        line-height: 1 !important;
+        z-index: 10001 !important; /* 다른 요소보다 위에 오도록 설정 */
+    }
+
+    .toast-close-btn:hover {
+        color: #ff0000 !important; /* 마우스 올리면 빨간색으로 변경 */
+    }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body>
         <header class= "header">
@@ -128,42 +300,26 @@
 			<span class="user-info">
                 		아이디: ${currentUserId} 권한: ${currentUserAuthority}
 			</span>
+			
 			<button class= "btn btn-secondary"type="submit">로그아웃</button>
 		</form>
+		<div class="notif-wrapper">
+            <div id="notif-bell" class="notif-bell-container">
+                <i class="bi bi-bell-fill" style="font-size: 1.5rem; cursor: pointer;"></i>
+                <span id="notif-badge" class="notif-badge" style="display: none;"></span>
+            </div>
+
+            <div id="notif-dropdown" class="notif-dropdown" style="display: none;">
+                <div class="notif-header">최근 알림</div>
+                <div id="notif-list-container" class="notif-list">
+                    <div class="notif-empty">새로운 알림이 없습니다.</div>
+                </div>
+                <a href="/notifications/all" class="notif-footer">전체 보기</a>
+            </div>
+        </div>
 	</header>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
 
 	<div id="notification-container"></div>
-
-	<script>
-		function showToast(message, targetUrl) {
-			// 2. ID를 맞춰서 가져옵니다.
-			let container = document.getElementById('notification-container');
-			
-			
-			// 알림 요소 생성
-			const toast = document.createElement('div');
-			toast.className = 'notif-toast';
-			
-			toast.innerHTML = '<div class="notif-message">' + message + '</div>';
-
-			// 클릭 시 해당 URL로 이동
-			toast.onclick = function() {
-			if (targetUrl && targetUrl !== "#") {
-				window.location.href = targetUrl;
-			}
-			};
-
-			// 컨테이너에 추가 (이제 에러가 나지 않습니다)
-			container.appendChild(toast);
-
-			// 5초 뒤에 자동으로 사라짐
-			setTimeout(() => {
-				toast.style.opacity = '0';
-				toast.style.transform = 'translateX(100%)';
-				setTimeout(() => toast.remove(), 10000);
-			}, 10000);
-		}
-	</script>
 </body>
 </html>

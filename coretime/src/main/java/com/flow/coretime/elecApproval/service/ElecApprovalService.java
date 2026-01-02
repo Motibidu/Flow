@@ -97,7 +97,8 @@ public class ElecApprovalService {
                         String firstApproverId = histories.get(0).getApproverId();
                         log.info("첫 번째 결재자 알림 발송 대상: {}", firstApproverId);
 
-                        notificationService.send(firstApproverId, "새로운 결재문서가 도착했습니다." + documentDetail.getTitle(),
+                        notificationService.send(firstApproverId, documentDetail.getTitle(),
+                                        "새로운 결재문서가 도착했습니다: " + documentDetail.getDocType().getDisplayName(),
                                         "/elecApproval/detail/" + documentDetail.getDocId());
                 }
         }
@@ -197,15 +198,15 @@ public class ElecApprovalService {
 
                                 document.setStatus("IN_PROGRESS");
 
-                                notificationService.send(nextApprovalHistory.getApproverId(),
-                                                "결재 대기: '" + document.getTitle() + "' 문서의 승인 차례입니다.",
+                                notificationService.send(nextApprovalHistory.getApproverId(), document.getTitle(),
+                                                "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
                                                 "/elecApproval/detail/" + document.getDocId());
                         } else {
                                 // 더 이상 결재자가 없는 경우: 최종 승인 완료
                                 document.setStatus("APPROVED");
 
-                                notificationService.send(document.getInitiatorId(),
-                                                "결재 완료: '" + document.getTitle() + "' 문서가 최종 승인되었습니다! 🎉",
+                                notificationService.send(document.getInitiatorId(), document.getTitle(),
+                                                "결재 완료: '" + document.getDocType() + "' 문서가 최종 승인되었습니다! 🎉",
                                                 "/elecApproval/detail/" + document.getDocId());
                         }
                         // 4. 반려인 경우: 문서 상태 변경 및 이후 결재선은 무시됨
@@ -213,8 +214,8 @@ public class ElecApprovalService {
 
                         document.setStatus("REJECTED");
 
-                        notificationService.send(document.getInitiatorId(),
-                                        "결재 반려: '" + document.getTitle() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
+                        notificationService.send(document.getInitiatorId(), document.getTitle(),
+                                        "결재 반려: '" + document.getDocType() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
                                         "/elecApproval/detail/" + document.getDocId());
                 }
 
@@ -286,7 +287,8 @@ public class ElecApprovalService {
                 String firstApproverId = histories.get(0).getApproverId();
 
                 // 8. 결재자에게 SSE 메시지 전송
-                notificationService.send(firstApproverId, "새로운 결재문서가 도착했습니다." + redfraftDocumentDetail.getTitle(),
+                notificationService.send(firstApproverId, redfraftDocumentDetail.getTitle(),
+                                "새로운 결재문서가 도착했습니다." + redfraftDocumentDetail.getDocType(),
                                 "/elecApproval/detail/" + docId);
         }
 

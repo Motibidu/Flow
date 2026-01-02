@@ -7,7 +7,6 @@
     <meta charset="UTF-8">
     <title>전자결재 상세 보기</title>
     <%-- 공통 헤더 (SockJS, STOMP 포함됨) --%>
-    <%@ include file="/WEB-INF/views/common/common-header.jsp" %>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <style>

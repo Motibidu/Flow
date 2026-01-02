@@ -3,20 +3,33 @@
 
 <mapper namespace="com.flow.coretime.notification.mapper.NotificationMapper">
         <insert id="insertNotification" parameterType="com.flow.coretime.notification.NotificationDTO">
-                INSERT INTO notification (recipient_id, message, target_url, is_read)
-                VALUES (#{recipientId}, #{message}, #{targetUrl}, #{isRead}) 
+                INSERT INTO notifications (recipient_id, title, message, target_url, is_read)
+                VALUES (#{recipientId}, #{title}, #{message}, #{targetUrl}, #{isRead}) 
         </insert>
 
-        <select id="selectUnreadList" resultType="com.flow.coretime.notification.NotificationDTO">
-                SELECT notif_id, recipient_id, message, target_url, is_read, created_at
-                FROM notification
-                WHERE recipient_id = #{userId} AND is_read = 'UNREAD'
-                ORDER BY created_at DESC
+        <select id="selectRecentNotifications" resultType="com.flow.coretime.notification.NotificationDTO">
+                SELECT * FROM notifications 
+                WHERE recipient_id = #{userId}
+                ORDER BY 
+                        (CASE WHEN is_read = 'UNREAD' THEN 0 ELSE 1 END) ASC,
+                        created_at DESC
+                LIMIT 10
         </select>
 
-        <update id="updateReadStatus">
-                UPDATE notification 
+
+        <update id="markAsRead">
+                UPDATE notifications 
                 SET is_read = 'READ' 
                 WHERE notif_id = #{notifId}
         </update>
+
+        <update id="markAllAsRead">
+                UPDATE notifications
+                SET is_read= 'READ'
+                WHERE recipient_id = #{userId}
+        </update>
+
+
+
+
 </mapper>

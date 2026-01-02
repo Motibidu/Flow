@@ -2,6 +2,7 @@ package com.flow.coretime.notification;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,10 +46,10 @@ public class NotificationService {
         return emitter;
     }
 
-    public void send(String userId, String message, String url) {
+    public void send(String userId, String title, String message, String url) {
 
         // 1. DB에 먼저 저장 (영속성 확보)
-        NotificationDTO notifcationDto = NotificationDTO.create(userId, message, url);
+        NotificationDTO notifcationDto = NotificationDTO.create(userId, title, message, url);
         notificationMapper.insertNotification(notifcationDto);
 
         // 2. 접속 중인 경우 실시간 발송 (SSE)
@@ -67,5 +68,18 @@ public class NotificationService {
                 log.error("알림 전송 실패", e);
             }
         }
+    }
+
+    public List<NotificationDTO> selectRecentNotifications(String userId) {
+        return notificationMapper.selectRecentNotifications(userId);
+
+    }
+
+    public void markAsRead(int notifId) {
+        notificationMapper.markAsRead((long) notifId);
+    }
+
+    public void markAllAsRead(String userId){
+        notificationMapper.markAllAsRead(userId);
     }
 }
