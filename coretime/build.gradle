@@ -41,10 +41,12 @@ dependencies {
 	implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.0'
 	implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl:3.0.1'
 
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	implementation 'org.webjars:webjars-locator-core'
-	implementation 'org.webjars:sockjs-client:1.5.1'
-	implementation 'org.webjars:stomp-websocket:2.3.4'
+	// implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	// implementation 'org.webjars:webjars-locator-core'
+	// implementation 'org.webjars:sockjs-client:1.5.1'
+	// implementation 'org.webjars:stomp-websocket:2.3.4'
+
+	implementation 'com.github.pagehelper:pagehelper-spring-boot-starter:2.1.0'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.4'

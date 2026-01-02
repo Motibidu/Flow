@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.github.pagehelper.PageInfo;
+
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -35,12 +37,22 @@ public class NotificationController {
         @GetMapping("/api/notifications/recent-notifications")
         public ResponseEntity<List<NotificationDTO>> selectRecentNotifications(
                         @RequestParam(name = "userId") String userId) {
-                // DB에서 isRead가 'UNREAD'인 알림만 조회
-                List<NotificationDTO> unreadList = notificationService.selectRecentNotifications(userId);
-                return ResponseEntity.ok(unreadList);
+                List<NotificationDTO> recentNotifications = notificationService.selectRecentNotifications(userId);
+                return ResponseEntity.ok(recentNotifications);
         }
 
-        @GetMapping("notifications/all")
+        @GetMapping("/api/notifications/all-notifications")
+        public ResponseEntity<PageInfo<NotificationDTO>> selectallNotifications(
+                        @RequestParam(name = "userId") String userId,
+                        @RequestParam(name = "page", defaultValue = "1") int page,
+                        @RequestParam(name = "size", defaultValue = "10") int size) {
+
+                // List 대신 PageInfo를 반환합니다.
+                PageInfo<NotificationDTO> pageInfo = notificationService.selectAllNotifications(userId, page, size);
+                return ResponseEntity.ok(pageInfo);
+        }
+
+        @GetMapping("/api/notifications/all")
         public String viewAllNotifications(@AuthenticationPrincipal UserDetails userDetails, Model model) {
                 String currentUserId = userDetails.getUsername();
                 model.addAttribute("currentUserId", currentUserId);

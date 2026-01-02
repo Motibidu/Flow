@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -39,7 +38,6 @@ public class ElecApprovalService {
         private final ElecApprovalHistoryMapper elecApprovalHistoryMapper;
         private final ElecApprovalLineConfigMapper elecApprovalLineConfigMapper;
         private final UserMapper userMapper;
-        private final SimpMessagingTemplate messagingTemplate;
         private final NotificationService notificationService;
 
         // 수신자의 결재대기 목록, docId를

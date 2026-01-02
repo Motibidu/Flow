@@ -9,7 +9,7 @@ import com.flow.coretime.notification.NotificationDTO;
 @Mapper
 public interface NotificationMapper {
     // 알림 저장
-    void insertNotification(NotificationDTO notification);
+    Long insertNotification(NotificationDTO notification);
 
     // 읽지 않은 알림 목록 조회
     List<NotificationDTO> selectRecentNotifications(String userId);
@@ -18,5 +18,7 @@ public interface NotificationMapper {
     void markAsRead(Long notifId);
 
     void markAllAsRead(String userId);
+
+    List<NotificationDTO> selectAllNotifications(String userId);
 
 }

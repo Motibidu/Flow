@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.flow.coretime.notification.mapper.NotificationMapper;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,7 @@ public class NotificationService {
 
         // 1. DB에 먼저 저장 (영속성 확보)
         NotificationDTO notifcationDto = NotificationDTO.create(userId, title, message, url);
+
         notificationMapper.insertNotification(notifcationDto);
 
         // 2. 접속 중인 경우 실시간 발송 (SSE)
@@ -57,6 +60,7 @@ public class NotificationService {
         if (emitter != null) {
             try {
                 Map<String, String> data = new HashMap<>();
+                data.put("notifId", String.valueOf(notifcationDto.getNotifId()));
                 data.put("message", message);
                 data.put("targetUrl", url);
 
@@ -79,7 +83,13 @@ public class NotificationService {
         notificationMapper.markAsRead((long) notifId);
     }
 
-    public void markAllAsRead(String userId){
+    public void markAllAsRead(String userId) {
         notificationMapper.markAllAsRead(userId);
+    }
+
+    public PageInfo<NotificationDTO> selectAllNotifications(String userId, int page, int size) {
+        PageHelper.startPage(page, size);
+        List<NotificationDTO> list = notificationMapper.selectAllNotifications(userId);
+        return new PageInfo<>(list); // 여기에 전체 개수, 페이지 수 등이 다 들어있습니다.
     }
 }

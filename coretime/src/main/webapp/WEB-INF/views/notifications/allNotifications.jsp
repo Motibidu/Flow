@@ -30,82 +30,123 @@
                 <div class="text-center p-5">알림을 불러오는 중...</div>
             </div>
         </div>
+
+        <nav class="mt-4">
+            <ul id="pagination-container" class="pagination justify-content-center"></ul>
+        </nav>
     </div>
 
     <script>
+        // 서버에서 넘겨주는 유저 ID (JSP EL 사용)
         const currentUserId = "${currentUserId}";
 
         document.addEventListener("DOMContentLoaded", function() {
-            loadAllNotifications();
+            loadAllNotifications(1); // 초기 로딩 시 1페이지 요청
         });
 
-        function loadAllNotifications() {
-            fetch('/api/notifications/recent-notifications?userId=' + currentUserId) // 기존 API 재활용 (필요시 전체조회 API로 변경)
+        function loadAllNotifications(page) {
+            // API 호출 시 page와 size 파라미터 전달
+            fetch('/api/notifications/all-notifications?userId=' + currentUserId + '&page=' + page + '&size=15')
                 .then(res => res.json())
                 .then(data => {
+                    console.log("data: ", data);
                     const container = document.getElementById('all-notif-list');
                     container.innerHTML = '';
 
-                    if (data.length === 0) {
+                    // data.list는 PageHelper가 반환하는 실제 데이터 리스트입니다.
+                    if (!data.list || data.list.length === 0) {
                         container.innerHTML = '<div class="text-center p-5 text-muted">알림 내역이 없습니다.</div>';
                         return;
                     }
 
-                    data.forEach(item => {
+                    data.list.forEach(item => {
                         const div = document.createElement('div');
                         const isUnread = item.isRead === 'UNREAD';
-                        div.innerHTML=`
-                            <div class="list-group-item \${isUnread ? 'unread' : ''}">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        \${isUnread ? '<span class="unread-dot"></span>' : ''}
-                                        <span>\${item.notifId}.</span>
-                                        <span class="fw-medium">\${item.message}</span>
-                                    </div>
-                                    <span class="notif-time">\${formatDate(item.createdAt)}</span>
-                                </div>
-                            </div>
-                        `;
-
+                        
+                        div.className = 'list-group-item ' + (isUnread ? 'unread' : '');
+                        
+                        // JSP EL 충돌 방지를 위해 백틱(`) 대신 문자열 더하기 사용 (가장 안전)
+                        let html = '<div class="d-flex justify-content-between">' +
+                                   '  <div>' +
+                                   (isUnread ? '    <span class="unread-dot"></span>' : '') +
+                                   '    <span>' + item.notifId + '. </span>' +
+                                   '    <span class="fw-medium">' + item.message + '</span>' +
+                                   '  </div>' +
+                                   '  <span class="notif-time">' + formatDate(item.createdAt) + '</span>' +
+                                   '</div>';
+                        
+                        div.innerHTML = html;
                         div.onclick = function() {
-                            if (item.isRead === 'UNREAD') {
-                                // 1. 아직 안 읽은 알림이라면 서버에 읽음 처리 요청
-                                fetch('/api/notifications/mark-read?notifId=' + item.notifId, { method: 'POST' })
-                                    .then(res => {
-                                        if (res.ok) {
-                                            // 2. 읽음 처리 성공 시 페이지 이동
-                                            if (item.targetUrl) location.href = item.targetUrl;
-                                        }
-                                    })
-                                    .catch(err => console.error("읽음 처리 실패:", err));
-                            } else {
-                                // 3. 이미 읽은 알림이라면 바로 이동
-                                if (item.targetUrl) location.href = item.targetUrl;
-                            }
+                            handleNotifClick(item);
                         };
                         container.appendChild(div);
                     });
+
+                    // 페이징 버튼 렌더링
+                    renderPagination(data);
+                })
+                .catch(err => {
+                    console.error("데이터 로드 실패:", err);
+                    document.getElementById('all-notif-list').innerHTML = '<div class="text-center p-5 text-danger">데이터를 불러오는 중 오류가 발생했습니다.</div>';
                 });
+        }
+
+        // PageHelper 정보를 이용한 페이징 버튼 생성
+        function renderPagination(data) {
+            const paginationContainer = document.getElementById('pagination-container');
+            paginationContainer.innerHTML = '';
+
+            // 이전 페이지 버튼
+            if (data.hasPreviousPage) {
+                const prevLi = document.createElement('li');
+                prevLi.className = 'page-item';
+                prevLi.innerHTML = '<a class="page-link" href="#" onclick="loadAllNotifications(' + data.prePage + '); return false;">이전</a>';
+                paginationContainer.appendChild(prevLi);
+            }
+
+            // 페이지 번호들 (navigatepageNums 배열 사용)
+            data.navigatepageNums.forEach(num => {
+                const li = document.createElement('li');
+                li.className = 'page-item ' + (num === data.pageNum ? 'active' : '');
+                li.innerHTML = '<a class="page-link" href="#" onclick="loadAllNotifications(' + num + '); return false;">' + num + '</a>';
+                paginationContainer.appendChild(li);
+            });
+
+            // 다음 페이지 버튼
+            if (data.hasNextPage) {
+                const nextLi = document.createElement('li');
+                nextLi.className = 'page-item';
+                nextLi.innerHTML = '<a class="page-link" href="#" onclick="loadAllNotifications(' + data.nextPage + '); return false;">다음</a>';
+                paginationContainer.appendChild(nextLi);
+            }
+        }
+
+        function handleNotifClick(item) {
+            if (item.isRead === 'UNREAD') {
+                fetch('/api/notifications/mark-read?notifId=' + item.notifId, { method: 'POST' })
+                    .then(res => {
+                        if (res.ok && item.targetUrl) location.href = item.targetUrl;
+                    });
+            } else if (item.targetUrl) {
+                location.href = item.targetUrl;
+            }
+        }
+
+        function formatDate(dateStr) {
+            if(!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.getFullYear() + '.' + (date.getMonth()+1) + '.' + date.getDate() + ' ' + date.getHours() + ':' + date.getMinutes();
         }
 
         function markAllAsRead() {
             if(!confirm("모든 알림을 읽음 처리하시겠습니까?")) return;
-
             fetch('/api/notifications/mark-all-read?userId=' + currentUserId, { method: 'POST' })
                 .then(res => {
                     if(res.ok) {
                         alert("모든 알림이 읽음 처리되었습니다.");
-                        loadAllNotifications();
-                        // 헤더의 배지도 업데이트
-                        const badge = document.getElementById('notif-badge');
-                        if (badge) badge.style.display = 'none';
+                        loadAllNotifications(1);
                     }
                 });
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleString();
         }
     </script>
 </body>

@@ -27,7 +27,8 @@
             // 2. 서버에서 보낸 'notification' 이벤트 수신
             eventSource.addEventListener("notification", function(event) {
                 const data = JSON.parse(event.data);
-                showToast(data.message, data.targetUrl);
+                console.log("data: ", data);
+                showToast(data.notifId, data.message, data.targetUrl);
 
                 const badge = document.getElementById('notif-badge');
                 if (badge) badge.style.display = 'block';
@@ -121,7 +122,7 @@
         return (date.getMonth() + 1) + "월 " + date.getDate() + "일 "+ date.getHours() + "시 " + date.getMinutes() + "분";
     }
 
-    function showToast(message, targetUrl) {
+    function showToast(notifId, message, targetUrl) {
         let container = document.getElementById('notification-container');
         if (!container) return;
 
@@ -143,7 +144,7 @@
         // 4. 메시지 영역 생성
         const msgContent = document.createElement('div');
         msgContent.className = 'notif-message';
-        msgContent.innerHTML = message;
+        msgContent.innerHTML = notifId+". "+message;
 
         // 5. 토스트 조립
         toast.appendChild(closeBtn);
@@ -151,9 +152,10 @@
 
         // 6. 토스트 전체 클릭 시 이동 (닫기 버튼 클릭 시에는 실행 안 됨)
         toast.onclick = function() {
-            if (targetUrl && targetUrl !== "#") {
-                window.location.href = targetUrl;
-            }
+            fetch('/api/notifications/mark-read?notifId=' + notifId, { method: 'POST' })
+                    .then(res => {
+                        if (res.ok && targetUrl) location.href = targetUrl;
+                    });
         };
 
         container.appendChild(toast);
@@ -314,7 +316,7 @@
                 <div id="notif-list-container" class="notif-list">
                     <div class="notif-empty">새로운 알림이 없습니다.</div>
                 </div>
-                <a href="/notifications/all" class="notif-footer">전체 보기</a>
+                <a href="/api/notifications/all" class="notif-footer">전체 보기</a>
             </div>
         </div>
 	</header>
