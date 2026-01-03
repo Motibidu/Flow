@@ -11,7 +11,7 @@ import com.flow.coretime.elecApproval.model.Document;
 
 @Mapper
 public interface ElecApprovalMapper {
-        List<Document> findPendingApprovalsByApproverId(@Param("approverId") String approverId);
+        List<Document> findDocumentsToApprove(@Param("approverId") String approverId);
 
         List<Document> findInProgressDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
 
@@ -25,12 +25,11 @@ public interface ElecApprovalMapper {
 
         void updateDocumentStatus(Document document);
 
-
-        int cancelApproval(Map<String,Object> params);
+        int cancelApproval(Map<String, Object> params);
 
         void deletePendingHistory(Long docId);
 
-        Document getDocumentDetail(Long docId);
+        Document getDocument(Long docId);
 
         int updateDocumentForRedraft(Document redraftData);
 

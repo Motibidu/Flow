@@ -23,3 +23,35 @@ VALUES
 
 INSERT INTO USERS (ID, NAME, PASSWORD, DEPARTMENT, RANK_NAME)
 VALUES ('admin_leader', '관리팀장', '1234', '관리자', '팀장');
+
+ALTER TABLE USERS ADD COLUMN POSITION VARCHAR(30) NOT NULL DEFAULT 'MEMBER';
+
+INSERT INTO USERS (
+    id, 
+    name, 
+    password, 
+    email, 
+    tel, 
+    rank_name, 
+    department, 
+    birth, 
+    updated_at, 
+    created_at, 
+    role, 
+    POSITION, 
+    manager_id
+) VALUES (
+    'dev_ceo', 
+    '최대표', 
+    '$2a$12$Y8tBFl3YC7AZkrK7O0f6.uG9E3u9E3u9E3u9E3u9E3u9E3u9E3u9E', -- BCrypt hash
+    'ceo@coretime.com', 
+    '010-1111-0000', 
+    'CEO',      -- RankType (직급)
+    'DEV',      -- 개발팀 소속
+    '1970-01-01', 
+    NOW(), 
+    NOW(), 
+    'ROLE_ADMIN', 
+    'CEO',      -- Position (직책)
+    NULL        -- 최상위권한자이므로 상관 없음
+);

@@ -18,11 +18,11 @@
         WHERE ID = #{id}
     </select>
 
-    <select id="findUserByDeptAndRank" resultType="String">
+    <select id="findUserByDepartmentAndPosition" resultType="String">
         SELECT id
         FROM users
         WHERE department = #{department}
-        AND rank_name = #{rankName}
+        AND position = #{position}
         ORDER BY created_at ASC
         LIMIT 1 
     </select>

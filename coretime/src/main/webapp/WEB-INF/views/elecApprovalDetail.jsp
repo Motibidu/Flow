@@ -291,7 +291,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             // JSON 데이터 파싱 및 매핑
             const jsonContentString = '${documentDetail.jsonContent}';
-            console.log(jsonContentString);
+            const departmentMap = {
+                'HR': '인사팀',
+                'SALES': '영업팀',
+                'DEV': '개발팀',
+                'PLANNING': '기획팀',
+                'MARKETING': '마케팅팀',
+                'SUPPORT': '고객지원팀',
+                'MANAGEMENT': '경영지원팀'
+            };
+            //console.log(jsonContentString);
 
             if (jsonContentString) {
                 try {
@@ -301,7 +310,8 @@
                     // 휴가 신청서 양식 매핑
                     if (docType.includes('휴가') || docType === 'VACATION_REQUEST') {
                         document.getElementById('jsonApplicantName').innerText = jsonData.applicantName || '-';
-                        document.getElementById('jsonDepartment').innerText = jsonData.department || '-';
+                        const departmentName = departmentMap[jsonData.department] || jsonData.department || '-';
+                        document.getElementById('jsonDepartment').innerText = departmentName;
                         document.getElementById('jsonVacationType').innerText = jsonData.vacationType || '-';
                         document.getElementById('jsonStartDate').innerText = jsonData.startDate || '-';
                         document.getElementById('jsonEndDate').innerText = jsonData.endDate || '-';

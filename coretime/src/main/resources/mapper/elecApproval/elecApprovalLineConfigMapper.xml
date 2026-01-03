@@ -6,8 +6,8 @@
                 SELECT 
                         CONFIG_ID,
                         DOC_TYPE,
-                        TARGET_RANK,
-                        DEPT_TYPE,
+                        POSITION,
+                        DEPARTMENT,
                         APPROVAL_ORDER,
                         DESCRIPTION
                 FROM 

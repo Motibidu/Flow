@@ -7,6 +7,9 @@ import java.util.Optional;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.flow.coretime.common.enums.DepartmentType;
+import com.flow.coretime.common.enums.PositionType;
+import com.flow.coretime.common.enums.RankType;
 import com.flow.coretime.users.model.User;
 
 @Mapper
@@ -24,6 +27,6 @@ public interface UserMapper {
 
 	void updateUserByExistingId(@Param("existingId") String existingId, @Param("newUserInfo") User newUserInfo);
 
-	Optional<String> findUserByDeptAndRank(@Param("department") String department,
-			@Param("rankName") String rankName);
+	Optional<String> findUserByDepartmentAndPosition(@Param("department") DepartmentType department,
+			@Param("position") PositionType position);
 }

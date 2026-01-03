@@ -165,44 +165,44 @@
             </div>
 
             <%-- 1. 결재 대기 문서 (관리자용) --%>
-            <c:if test="${currentUserAuthority eq 'ROLE_USER'}">
-                <div class="widget">
-                    <h2>나의 결재 대기 문서</h2>
-                    <c:choose>
-                        <c:when test="${not empty pendingApprovals}">
-                            <table class="data-table">
-                                <thead>
+            
+            <div class="widget">
+                <h2>나의 결재 대기 문서</h2>
+                <c:choose>
+                    <c:when test="${not empty pendingApprovals}">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>문서 ID</th>
+                                    <th>제목</th>
+                                    <th>결재양식</th>
+                                    <th>기안자</th>
+                                    <th>기안일</th>
+                                    <th>상태</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach var="doc" items="${pendingApprovals}">
                                     <tr>
-                                        <th>문서 ID</th>
-                                        <th>제목</th>
-                                        <th>결재양식</th>
-                                        <th>기안자</th>
-                                        <th>기안일</th>
-                                        <th>상태</th>
-                                        <th>액션</th>
+                                        <td>${doc.docId}</td>
+                                        <td><a href="/elecApproval/detail/${doc.docId}">${doc.title}</a></td>
+                                        <td>${doc.docType}</td>
+                                        <td>${doc.initiatorName}</td>
+                                        <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
+                                        <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                                        <td><button class="btn btn-secondary" onclick="quickApprove(${doc.docId})">바로결재</button></td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <c:forEach var="doc" items="${pendingApprovals}">
-                                        <tr>
-                                            <td>${doc.docId}</td>
-                                            <td><a href="/elecApproval/detail/${doc.docId}">${doc.title}</a></td>
-                                            <td>${doc.docType}</td>
-                                            <td>${doc.initiatorName}</td>
-                                            <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
-                                            <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
-                                            <td><button class="btn btn-secondary" onclick="quickApprove(${doc.docId})">바로결재</button></td>
-                                        </tr>
-                                    </c:forEach>
-                                </tbody>
-                            </table>
-                        </c:when>
-                        <c:otherwise>
-                            <p class="no-data">결재할 문서가 없습니다.</p>
-                        </c:otherwise>
-                    </c:choose>
-                </div>
-            </c:if>
+                                </c:forEach>
+                            </tbody>
+                        </table>
+                    </c:when>
+                    <c:otherwise>
+                        <p class="no-data">결재할 문서가 없습니다.</p>
+                    </c:otherwise>
+                </c:choose>
+            </div>
+            
 
             <%-- 2. 내가 기안한 진행 중 문서 --%>
             <div class="widget">

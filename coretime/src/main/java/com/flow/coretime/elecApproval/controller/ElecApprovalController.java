@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 import com.flow.coretime.elecApproval.enums.DocumentType;
+import com.flow.coretime.elecApproval.model.ApprovalReq;
 import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
 import com.flow.coretime.elecApproval.service.ElecApprovalService;
@@ -46,19 +48,18 @@ public class ElecApprovalController {
         @GetMapping
         public String showElecApproval(@AuthenticationPrincipal UserDetails userDetails, Model model) {
                 String currentUserId = userDetails.getUsername();
-                
 
                 List<Document> pendingApprovals = elecApprovalService.getPendingApprovals(currentUserId);
                 model.addAttribute("pendingApprovals", pendingApprovals);
 
-                List<Document> myInProgressDocs = elecApprovalService.getMyInProgressDocs(currentUserId);
+                List<Document> myInProgressDocs = elecApprovalService.selectMyInProgressDocs(currentUserId);
                 model.addAttribute("myInProgressDocs", myInProgressDocs);
 
-                List<Document> myApprovedDocs = elecApprovalService.getMyApprovedDocs(currentUserId);
-                model.addAttribute("myApprovedDocs", myApprovedDocs);
-
-                List<Document> rejectedOrRecalled = elecApprovalService.getRejectedOrRecalledDocs(currentUserId);
+                List<Document> rejectedOrRecalled = elecApprovalService.selectRejectedOrRecalledDocs(currentUserId);
                 model.addAttribute("myRejectedOrRecalledDocs", rejectedOrRecalled);
+
+                List<Document> myApprovedDocs = elecApprovalService.selectMyApprovedDocs(currentUserId);
+                model.addAttribute("myApprovedDocs", myApprovedDocs);
 
                 return "elecApproval";
         }
@@ -66,11 +67,11 @@ public class ElecApprovalController {
         @GetMapping("/new")
         public String showElecApprovalNew(@RequestParam("formType") String formType,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
+                log.info("formType: ", formType);
                 User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
                                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
                 model.addAttribute("currentUserName", currentUser.getName());
-                model.addAttribute("currentUserDepartment", currentUser.getDepartment());
-                System.out.println("formType: " + formType);
+                model.addAttribute("currentUserDepartment", currentUser.getDepartment().getDescription());
                 if (formType == "vacationRequestForm") {
                         return "vacationRequestForm";
                 }
@@ -108,7 +109,7 @@ public class ElecApprovalController {
                 model.addAttribute("approvalHistories", approvalHistories);
 
                 String currentApproverId = approvalHistories.stream()
-                                .filter(h -> "PENDING".equals(h.getAction()))
+                                .filter(h -> "PENDING".equals(h.getApprovalStatus()))
                                 .findFirst()
                                 .map(ElecApprovalHistory::getApproverId)
                                 .orElse(null);
@@ -120,7 +121,7 @@ public class ElecApprovalController {
 
         @GetMapping("/edit/{docId}")
         public String showEditForm(@PathVariable("docId") Long docId, Model model) {
-                Document document = elecApprovalService.getDocumentDetail(docId); //
+                Document document = elecApprovalService.getDocument(docId); //
                 model.addAttribute("document", document);
 
                 return "vacationEditForm";
@@ -154,43 +155,21 @@ public class ElecApprovalController {
         @ResponseBody // JSON 응답을 위해
         public ResponseEntity<Map<String, String>> approveOrRejectDocument(
                         @PathVariable("docId") int docId,
-                        @RequestBody Map<String, String> payload, // { "action": "APPROVED", "comment": "의견" }
+                        @RequestBody ApprovalReq approvalReq,
                         @AuthenticationPrincipal UserDetails userDetails) {
 
-                String approverId = userDetails.getUsername();
-                String action = payload.get("action"); // "APPROVED" 또는 "REJECTED"
-                String comment = payload.get("comment");
-
-                if (action == null || (!"APPROVED".equals(action) && !"REJECTED".equals(action))) {
-                        return new ResponseEntity<>(
-                                        Map.of("status", "error", "message", "유효하지 않은 결재 액션입니다."),
-                                        HttpStatus.BAD_REQUEST);
-                }
+                ApprovalStatus approvalStatus = ApprovalStatus.fromString(approvalReq.getAction());
+                String comment = approvalReq.getComment();
 
                 // 반려 시 의견 필수 검증
-                if ("REJECTED".equals(action) && (comment == null || comment.trim().isEmpty())) {
-                        return new ResponseEntity<>(
-                                        Map.of("status", "error", "message", "반려 시에는 의견을 필수로 입력해야 합니다."),
-                                        HttpStatus.BAD_REQUEST);
-                }
+                approvalStatus.validateCommentWhenRejected(comment);
 
-                try {
-                        elecApprovalService.processApproval(docId, approverId, action, comment);
-                        String successMessage = "APPROVED".equals(action) ? "결재가 승인되었습니다." : "결재가 반려되었습니다.";
-                        return new ResponseEntity<>(
-                                        Map.of("status", "success", "message", successMessage),
-                                        HttpStatus.OK);
-                } catch (IllegalArgumentException e) {
-                        // 유효하지 않은 결재 요청 (예: 이미 승인/반려된 문서, 결재자가 아님 등)
-                        return new ResponseEntity<>(
-                                        Map.of("status", "error", "message", e.getMessage()),
-                                        HttpStatus.BAD_REQUEST);
-                } catch (Exception e) {
-                        // 그 외 예상치 못한 서버 오류
-                        return new ResponseEntity<>(
-                                        Map.of("status", "error", "message", "서버 오류: " + e.getMessage()),
-                                        HttpStatus.INTERNAL_SERVER_ERROR);
-                }
+                String approverId = userDetails.getUsername();
+                elecApprovalService.processApproval(docId, approverId, approvalStatus, comment);
+
+                // 3. 성공 응답만 리턴
+                String successMessage = (approvalStatus == ApprovalStatus.APPROVED) ? "결재가 승인되었습니다." : "결재가 반려되었습니다.";
+                return ResponseEntity.ok(Map.of("status", "success", "message", successMessage));
         }
 
         @PostMapping("/recall/{docId}")

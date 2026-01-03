@@ -8,7 +8,7 @@
         <result property="docId" column="DOC_ID"/>
         <result property="approverId" column="APPROVER_ID"/>
         <result property="approvalOrder" column="APPROVAL_ORDER"/> 
-        <result property="action" column="ACTION"/>
+        <result property="approvalStatus" column="APPROVAL_STATUS"/>
         <result property="commentText" column="COMMENTS"/>    
         <result property="actionDate" column="ACTION_DATE"/>     
         <result property="approverName" column="APPROVER_NAME"/>
@@ -20,14 +20,14 @@
         INSERT INTO APPROVAL_HISTORY (
             DOC_ID,
             APPROVER_ID,
-            ACTION,
+            APPROVAL_STATUS,
             COMMENTS,
             ACTION_DATE,
             APPROVAL_ORDER
         ) VALUES (
             #{docId},
             #{approverId},
-            #{action},
+            #{approvalStatus},
             #{commentText}, NOW(),
             #{approvalOrder} )
     </insert>
@@ -37,7 +37,7 @@
             DOC_ID, 
             APPROVER_ID, 
             APPROVAL_ORDER, 
-            ACTION,
+            APPROVAL_STATUS,
             ACTION_DATE
         ) VALUES 
         <foreach collection="histories" item="h" separator=",">
@@ -45,7 +45,7 @@
             #{h.docId}, 
             #{h.approverId}, 
             #{h.approvalOrder}, 
-            #{h.action},
+            #{h.approvalStatus},
             #{h.actionDate}
         )
         </foreach>
@@ -54,7 +54,7 @@
     <update id="updateApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
         UPDATE APPROVAL_HISTORY
         SET
-            ACTION = #{action},
+            APPROVAL_STATUS = #{approvalStatus},
             COMMENTS = #{commentText}, 
             ACTION_DATE = #{actionDate}
         WHERE
@@ -67,14 +67,14 @@
             DOC_ID,
             APPROVER_ID,
             APPROVAL_ORDER,
-            ACTION,
+            APPROVAL_STATUS,
             COMMENTS,
             ACTION_DATE
         FROM
             APPROVAL_HISTORY
         WHERE
             DOC_ID = #{docId}
-            AND ACTION = 'PENDING'
+            AND APPROVAL_STATUS = 'PENDING'
         ORDER BY
             APPROVAL_ORDER ASC
         LIMIT 1 
@@ -86,7 +86,7 @@
             AH.DOC_ID,
             AH.APPROVER_ID,
             AH.APPROVAL_ORDER,
-            AH.ACTION,
+            AH.APPROVAL_STATUS,
             AH.COMMENTS,
             AH.ACTION_DATE,
             U.NAME AS APPROVER_NAME,
@@ -113,7 +113,7 @@
             AH.DOC_ID,
             AH.APPROVER_ID,
             AH.APPROVAL_ORDER,
-            AH.ACTION,
+            AH.APPROVAL_STATUS,
             AH.COMMENTS,
             AH.ACTION_DATE,
             U.NAME AS APPROVER_NAME,

@@ -5,6 +5,9 @@ import java.time.LocalDate;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
+import com.flow.coretime.common.enums.DepartmentType;
+import com.flow.coretime.common.enums.PositionType;
+import com.flow.coretime.common.enums.RankType;
 import com.flow.coretime.users.validation.PasswordMatches;
 
 import jakarta.validation.constraints.Email;
@@ -41,10 +44,13 @@ public class User {
     private String tel;
 
     @NotBlank(message = "직위를 선택해주세요.")
-    private String rankName;
+    private RankType rank;
 
-    @NotBlank(message = "부서를 선택해주세요.") // 부서 필드 유효성 검증 추가
-    private String department;
+    @NotBlank(message = "부서를 선택해주세요.")
+    private DepartmentType department;
+
+    @NotBlank(message = "부서를 선택해주세요.")
+    private PositionType position;
 
     @NotNull(message = "생년월일을 입력해주세요.") // LocalDate는 @NotBlank 대신 @NotNull 사용
     @DateTimeFormat(pattern = "yyyy-MM-dd")

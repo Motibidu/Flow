@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import com.flow.coretime.common.enums.RankType;
+import com.flow.coretime.elecApproval.enums.ApprovalStatus;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,7 +19,7 @@ public class ElecApprovalHistory {
         private int docId;
         private String approverId;
         private int approvalOrder;
-        private String action;
+        private ApprovalStatus approvalStatus;
         private String commentText;
 
         // 승인 또는 반려가 처리된 시점
@@ -24,5 +27,5 @@ public class ElecApprovalHistory {
 
         // 결재선 표시를 위한 추가 필드 (JOIN 또는 UserService 호출로 채워짐)
         private String approverName; // USERS.NAME
-        private String approverRank; // USERS.RANK (User 모델에 rank 필드가 있다면)
+        private RankType approverRank; // USERS.RANK (User 모델에 rank 필드가 있다면)
 }
