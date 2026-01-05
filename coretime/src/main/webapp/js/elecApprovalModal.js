@@ -15,87 +15,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 양식 상세 정보 mock 데이터
     const formDetails = {
-        "vacationRequestForm": {
+        "VACATION_REQUEST": {
             title: "휴가신청서",
             globalDoc: "인사기록",
             retentionPeriod: "10년",
             draftingDept: "인사팀",
             deptDoc: "인사팀 문서함"
         },
-        "품의서": {
-            title: "품의서",
+        // 2. 지출결의서 (회계/비용 관련)
+        "EXPENSE_REPORT": {
+            title: "지출결의서",
+            globalDoc: "회계/재무기록",
+            retentionPeriod: "5년",
+            draftingDept: "회계팀",
+            deptDoc: "회계팀 문서함"
+        },
+        
+        // 3. 일반 품의서 (경영/일반 업무 관련)
+        "GENERAL_PROPOSAL": {
+            title: "일반 품의서",
             globalDoc: "경영기록",
             retentionPeriod: "5년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "출장보고서": {
-            title: "출장보고서",
-            globalDoc: "업무기록",
-            retentionPeriod: "3년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "출장": {
-            title: "출장신청서",
-            globalDoc: "업무기록",
-            retentionPeriod: "3년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "국내출장신청": {
-            title: "국내출장신청서",
-            globalDoc: "업무기록",
-            retentionPeriod: "3년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "해외출장신청": {
-            title: "해외출장신청서",
-            globalDoc: "업무기록",
-            retentionPeriod: "3년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "비자발급신청": {
-            title: "비자발급신청서",
-            globalDoc: "인사기록",
-            retentionPeriod: "5년",
-            draftingDept: "인사팀",
-            deptDoc: "인사팀 문서함"
-        },
-        "교육결과보고": {
-            title: "교육결과보고서",
-            globalDoc: "교육기록",
-            retentionPeriod: "1년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "휴직원": {
-            title: "휴직원",
-            globalDoc: "인사기록",
-            retentionPeriod: "10년",
-            draftingDept: "인사팀",
-            deptDoc: "인사팀 문서함"
-        },
-        "재분류신청": {
-            title: "재분류신청서",
-            globalDoc: "업무기록",
-            retentionPeriod: "3년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "교육수강신청": {
-            title: "교육수강신청서",
-            globalDoc: "교육기록",
-            retentionPeriod: "1년",
-            draftingDept: "기안 부서",
-            deptDoc: "기안 부서 문서함"
-        },
-        "일반": {
-            title: "일반품의",
-            globalDoc: "경영기록",
-            retentionPeriod: "1년",
             draftingDept: "기안 부서",
             deptDoc: "기안 부서 문서함"
         }
@@ -148,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedRadio = document.querySelector('input[name="selectedForm"]:checked');
         if (selectedRadio) {
             const selectedFormValue = selectedRadio.value;
-            alert("선택된 양식: " + selectedFormValue + ". 새 문서 작성 페이지로 이동합니다.");
             window.location.href = '/elecApproval/new?formType=' + encodeURIComponent(selectedFormValue);
         } else {
             alert("결재 양식을 선택해주세요.");

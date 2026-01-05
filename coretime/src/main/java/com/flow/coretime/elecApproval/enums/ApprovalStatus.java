@@ -12,7 +12,7 @@ public enum ApprovalStatus {
     REJECTED("반려"), // 반려 완료
     RECALLED("취소"); // 기안자가 문서를 취소함
 
-    private final String description;
+    private final String displayName;
 
     public static ApprovalStatus fromString(String value) {
         try {

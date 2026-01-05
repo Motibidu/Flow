@@ -13,24 +13,27 @@ import lombok.Data;
 public class Document {
         // 테이블 컬럼
         private int docId;
+
+        // jsp에서 가져옴
         private DocumentType docType;
         private String title;
+        private String jsonContent;
+
+        // service에서 채움
         private DocumentStatus status;
         private Date draftDate;
-        private String jsonContent;
         private Date updatedAt;
 
-        // JOIN
-        // 테이블: USERS
+        // JOIN테이블: USERS, service에서 채움
         private String initiatorId;
         private String initiatorName;
         private RankType initiatorRank;
         private DepartmentType initiatorDepartment;
 
-        // 테이블: APPROVAL_HISTORY
+        // JOIN테이블: APPROVAL_HISTORY
         private String currentApproverName;
 
         public String getInitiatorDepartmentName() {
-                return initiatorDepartment != null ? initiatorDepartment.getDescription() : "";
+                return initiatorDepartment != null ? initiatorDepartment.getDisplayName() : "";
         }
 }

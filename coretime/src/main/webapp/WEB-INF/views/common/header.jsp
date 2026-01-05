@@ -176,7 +176,7 @@
     }
 </script>
 <style>
-    .header {
+        .header {
 		width: 100%;
 		height: 80px; /* 고정 높이 */
 		display: flex;

@@ -13,5 +13,5 @@ public enum DocumentStatus {
         REJECTED("반려"), // 결재자 중 한 명이라도 반려
         RECALLED("상신취소"); // 기안자가 직접 취소
 
-        private final String description;
+        private final String displayName;
 }

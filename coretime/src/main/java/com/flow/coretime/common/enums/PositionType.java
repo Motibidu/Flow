@@ -13,7 +13,7 @@ public enum PositionType {
     CEO("CEO", "대표이사", 4);
 
     private final String code;
-    private final String description;
+    private final String displayName;
     private final int level; // 숫자가 높을수록 높은 직책
 
     // 특정 직책보다 상위 직책인지 확인 (결재 권한 체크용)

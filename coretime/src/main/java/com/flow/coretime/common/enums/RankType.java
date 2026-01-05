@@ -16,7 +16,7 @@ public enum RankType {
     DIRECTOR("이사", 6),
     CEO("대표이사", 7);
 
-    private final String description;
+    private final String displayName;
     private final int level;
 
     // 특정 직급보다 높은지 확인하는 메서드 (결재 로직에서 활용 가능)

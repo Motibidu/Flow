@@ -1,7 +1,6 @@
 package com.flow.coretime.elecApproval.controller;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,13 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 import com.flow.coretime.elecApproval.enums.DocumentType;
+import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
 import com.flow.coretime.elecApproval.model.ApprovalReq;
 import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
+import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
 import com.flow.coretime.elecApproval.service.ElecApprovalService;
 import com.flow.coretime.users.model.User;
 import com.flow.coretime.users.service.UserService;
@@ -42,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/elecApproval")
 public class ElecApprovalController {
 
+        private final ElecApprovalLineConfigMapper elecApprovalLineConfigMapper;
         private final ElecApprovalService elecApprovalService;
         private final UserService userService;
 
@@ -52,6 +52,7 @@ public class ElecApprovalController {
                 List<Document> pendingApprovals = elecApprovalService.getPendingApprovals(currentUserId);
                 model.addAttribute("pendingApprovals", pendingApprovals);
 
+                // 내가 기안한 진행 중 문서
                 List<Document> myInProgressDocs = elecApprovalService.selectMyInProgressDocs(currentUserId);
                 model.addAttribute("myInProgressDocs", myInProgressDocs);
 
@@ -67,21 +68,40 @@ public class ElecApprovalController {
         @GetMapping("/new")
         public String showElecApprovalNew(@RequestParam("formType") String formType,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
-                log.info("formType: ", formType);
                 User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
                                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
                 model.addAttribute("currentUserName", currentUser.getName());
-                model.addAttribute("currentUserDepartment", currentUser.getDepartment().getDescription());
-                if (formType == "vacationRequestForm") {
-                        return "vacationRequestForm";
+                model.addAttribute("currentUserDepartment", currentUser.getDepartment().getDisplayName());
+
+                if (DocumentType.VACATION_REQUEST.toString().equals(formType)) {
+                        List<ElecApprovalLineConfig> approvalLines = elecApprovalLineConfigMapper
+                                        .getApprovalConfigList(DocumentType.VACATION_REQUEST);
+                        log.info("approvalLines: {}", approvalLines);
+                        model.addAttribute("approvalLines", approvalLines);
+
+                        return "elecApproval/vacationRequestForm";
+                } else if (DocumentType.EXPENSE_REPORT.toString().equals(formType)) {
+                        List<ElecApprovalLineConfig> approvalLines = elecApprovalLineConfigMapper
+                                        .getApprovalConfigList(DocumentType.EXPENSE_REPORT);
+                        model.addAttribute("approvalLines", approvalLines);
+
+                        return "elecApproval/expenseReportForm";
+                } else if (DocumentType.GENERAL_PROPOSAL.toString().equals(formType)) {
+                        List<ElecApprovalLineConfig> approvalLines = elecApprovalLineConfigMapper
+                                        .getApprovalConfigList(DocumentType.GENERAL_PROPOSAL);
+                        model.addAttribute("approvalLines", approvalLines);
+
+                        return "elecApproval/generalProposalForm";
                 }
-                return "elecApprovalNew";
+
+                return "elecApproval/elecApprovalNew";
 
         }
 
-        @PostMapping("/new")
-        public String showElecApprovalNew(@ModelAttribute Document document,
+        @PostMapping("/documents")
+        public String createElecApprovalNew(@RequestBody Document document,
                         @AuthenticationPrincipal UserDetails userDetails) {
+                log.info("document: {}", document);
 
                 // 1. 최소한의 사용자 식별 정보만 가져옴
                 String loginId = userDetails.getUsername();
@@ -96,59 +116,70 @@ public class ElecApprovalController {
         public String detailElecApproval(@PathVariable("docId") int docId,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
 
-                Document documentDetail = elecApprovalService.getDocumentById(docId)
-                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
-                model.addAttribute("documentDetail", documentDetail);
-
-                User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
-                                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-                model.addAttribute("currentUser", currentUser);
+                Document document = elecApprovalService.getDocumentById(docId);
+                model.addAttribute("document", document);
 
                 List<ElecApprovalHistory> approvalHistories = elecApprovalService
                                 .getApprovalHistoriesForDocument(docId);
                 model.addAttribute("approvalHistories", approvalHistories);
 
+                // 결재할 차례의 사람이면 승인/반려 버튼 활성화
                 String currentApproverId = approvalHistories.stream()
-                                .filter(h -> "PENDING".equals(h.getApprovalStatus()))
+                                .filter(h -> ApprovalStatus.PENDING.equals(h.getApprovalStatus()))
                                 .findFirst()
                                 .map(ElecApprovalHistory::getApproverId)
                                 .orElse(null);
-
                 model.addAttribute("currentApproverId", currentApproverId);
 
-                return "elecApprovalDetail";
+                // 기안자 본인이면 상신취소 또는 재기안 버튼 활성화
+                User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
+                                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+                model.addAttribute("currentUser", currentUser);
+
+                // log.info("document: {}", document);
+                // log.info("approvalHistories: {}", approvalHistories);
+                // log.info("currentApproverId: {}", currentApproverId);
+                // log.info("currentUser: {}", currentUser);
+
+                if (DocumentType.VACATION_REQUEST.equals(document.getDocType())) {
+                        return "elecApproval/vacationRequestDetail";
+                } else if (DocumentType.EXPENSE_REPORT.equals(document.getDocType())) {
+                        return "elecApproval/expenseReportDetail";
+                } else if (DocumentType.GENERAL_PROPOSAL.equals(document.getDocType())) {
+                        return "elecApproval/generalProposalDetail";
+                }
+
+                return "vacationRequestDetail";
         }
 
-        @GetMapping("/edit/{docId}")
-        public String showEditForm(@PathVariable("docId") Long docId, Model model) {
-                Document document = elecApprovalService.getDocument(docId); //
+        @GetMapping("/redraft/{docId}")
+        public String showEditForm(@PathVariable("docId") int docId, Model model) {
+                Document document = elecApprovalService.getDocumentById(docId);
+                log.info("document: {}", document);
                 model.addAttribute("document", document);
 
-                return "vacationEditForm";
+                DocumentType documentType = document.getDocType();
+                if (DocumentType.VACATION_REQUEST.equals(documentType)) {
+                        return "elecApproval/vacationRequestForm";
+                } else if (DocumentType.EXPENSE_REPORT.equals(documentType)) {
+                        return "elecApproval/expenseReportForm";
+                } else if (DocumentType.GENERAL_PROPOSAL.equals(documentType)) {
+                        return "elecApproval/generalProposalForm";
+                }
+
+                return "elecApproval/vacationEditForm";
         }
 
+        @ResponseBody
         @PostMapping("/redraft/{docId}")
         public String redraftDocument(@PathVariable("docId") int docId,
-                        @ModelAttribute Document redraftData,
-                        @AuthenticationPrincipal UserDetails userDetails,
-                        RedirectAttributes redirectAttributes) {
-                try {
+                        @RequestBody Document redraftData,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                log.info("redraftData: {}", redraftData);
+                String userId = userDetails.getUsername();
+                elecApprovalService.redraftDocument(userId, docId, redraftData);
 
-                        // 1. 현재 로그인한 사용자를 기안자로 설정 (보안)
-                        redraftData.setInitiatorId(userDetails.getUsername());
-
-                        // 2. 서비스 단에서 트랜잭션 처리 (문서 수정 + 상태 변경 + 기존 이력 삭제)
-                        elecApprovalService.redraftDocument(docId, redraftData);
-
-                        // 3. 성공 메시지와 함께 리다이렉트
-                        redirectAttributes.addFlashAttribute("message", "문서가 성공적으로 재상신되었습니다.");
-                        return "redirect:/elecApproval";
-
-                } catch (Exception e) {
-                        // 4. 에러 발생 시 기존 수정 페이지로 돌아가며 에러 메시지 전달
-                        redirectAttributes.addFlashAttribute("error", "재기안 처리 중 오류가 발생했습니다: " + e.getMessage());
-                        return "redirect:/elecApproval/edit/" + docId;
-                }
+                return "redirect:/elecApproval/detail/" + docId;
         }
 
         @PostMapping("/approval/{docId}")

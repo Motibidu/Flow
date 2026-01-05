@@ -146,6 +146,90 @@
         color: #868e96;
     }
 
+    /* 1. 모달 전체 배경 (Overlay) */
+    .modal {
+        display: none;        /* 초기에는 숨김 */
+        position: fixed;     /* 화면에 고정 */
+        z-index: 9999;       /* 최상단에 배치 */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* 어두운 반투명 배경 */
+        
+        /* 중앙 정렬을 위한 설정 */
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* 2. 모달 하얀색 박스 (Content) */
+    .modal-content {
+        background-color: #fff;
+        width: 600px;        /* 적절한 너비 설정 */
+        max-width: 90%;      /* 모바일 대응 */
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column; /* 헤더-바디-푸터 세로 배치 */
+        overflow: hidden;    /* 둥근 테두리 밖으로 내용 안나가게 */
+    }
+
+    /* 3. 내부 레이아웃 디테일 */
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 20px;
+        max-height: 70vh;    /* 내용이 너무 많으면 스크롤 생성 */
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    /* 닫기 버튼 스타일 */
+    .modal-close-button {
+        font-size: 24px;
+        cursor: pointer;
+        color: #999;
+    }
+    .modal-close-button:hover { color: #333; }
+
+    .form-select-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2단 구성 */
+    gap: 20px;
+    }
+
+    .form-section {
+        border: 1px solid #f0f0f0;
+        padding: 15px;
+        border-radius: 6px;
+    }
+
+    .form-section__title {
+        font-size: 15px;
+        margin-bottom: 10px;
+        color: #007bff;
+        border-left: 3px solid #007bff;
+        padding-left: 8px;
+    }
+
+    .form-detail-info p {
+        margin: 8px 0;
+        font-size: 13px;
+    }
+
     /* 모달 스타일 생략 (기존 스타일 유지) */
 </style>
 </head>
@@ -187,7 +271,7 @@
                                     <tr>
                                         <td>${doc.docId}</td>
                                         <td><a href="/elecApproval/detail/${doc.docId}">${doc.title}</a></td>
-                                        <td>${doc.docType}</td>
+                                        <td>${doc.docType.displayName}</td>
                                         <td>${doc.initiatorName}</td>
                                         <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                         <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
@@ -225,7 +309,7 @@
                                         <td>${doc.docId}</td>
                                         <td><a href="/elecApproval/detail/${doc.docId}">${doc.title}</a></td>
                                         <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
-                                        <td>${doc.docType}</td>
+                                        <td>${doc.docType.displayName}</td>
                                         <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
                                     </tr>
                                 </c:forEach>
@@ -259,7 +343,7 @@
                                         <td>${doc.docId}</td>
                                         <td><a href="/elecApproval/detail/${doc.docId}">${doc.title}</a></td>
                                         <td><fmt:formatDate value="${doc.updatedAt}" pattern="yyyy-MM-dd HH:mm"/></td>
-                                        <td>${doc.docType}</td>
+                                        <td>${doc.docType.displayName}</td>
                                         <td>
                                             <span class="status-badge status-${doc.status}">
                                                 ${doc.status eq 'REJECTED' ? '반려' : '취소'}
@@ -299,7 +383,7 @@
                                         <td>${doc.docId}</td>
                                         <td><a href="/elecApproval/detail/${doc.docId}">${doc.title}</a></td>
                                         <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
-                                        <td>${doc.docType}</td>
+                                        <td>${doc.docType.displayName}</td>
                                         <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
                                     </tr>
                                 </c:forEach>

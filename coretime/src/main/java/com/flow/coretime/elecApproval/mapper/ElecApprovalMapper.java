@@ -29,8 +29,6 @@ public interface ElecApprovalMapper {
 
         void deletePendingHistory(Long docId);
 
-        Document getDocument(Long docId);
-
         int updateDocumentForRedraft(Document redraftData);
 
         void deleteDocument(int docId);

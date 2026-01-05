@@ -13,8 +13,9 @@ public enum DepartmentType {
         PLANNING("PLANNING", "기획팀"),
         MARKETING("MARKETING", "마케팅팀"),
         SUPPORT("SUPPORT", "고객지원팀"),
-        MANAGEMENT("MANAGEMENT", "경영지원팀");
+        MANAGEMENT("MANAGEMENT", "경영지원팀"),
+        DRAFTER("DRAFTER", "기안자 부서"); // 결재선 설정 전용
 
         private final String code;
-        private final String description;
+        private final String displayName;
 }
