@@ -235,11 +235,11 @@
 </head>
 <body>
     <div class="header">
-        <%@ include file="header.jsp"%>
+        <%@ include file="../common/header.jsp"%>
     </div>
     <div class="content">
         <div id="nav">
-            <%@ include file="leftNav.jsp"%>
+            <%@ include file="../common/leftNav.jsp"%>
         </div>
         <div class="main">
             <h1>전자결재 시스템</h1>

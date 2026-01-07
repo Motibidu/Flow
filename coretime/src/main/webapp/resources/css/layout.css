@@ -1,0 +1,29 @@
+body { 
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; 
+    background-color: #f4f7f6; 
+    color: #333; 
+    margin: 0; 
+    padding: 0; 
+}
+
+.header-wrapper { width: 100%; }
+
+.main-wrapper { 
+    display: flex; /* 좌우 배치 */
+    width: 100%; 
+    min-height: calc(100vh - 80px); 
+}
+
+.nav-wrapper { 
+    width: 200px; /* 사이드바 고정 */
+    flex-shrink: 0; 
+    background-color: #f8f9fa; 
+}
+
+.content-wrapper { 
+    flex-grow: 1; 
+    padding: 40px; 
+    display: flex; 
+    justify-content: center; 
+    background-color: #f4f7f6; 
+}

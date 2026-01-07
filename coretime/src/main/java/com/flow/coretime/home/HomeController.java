@@ -17,6 +17,6 @@ public class HomeController {
 		model.addAttribute("currentUserAuthority",
 				userDetails.getAuthorities().stream().findFirst().get().getAuthority().trim());
 
-		return "home";
+		return "common/home";
 	}
 }

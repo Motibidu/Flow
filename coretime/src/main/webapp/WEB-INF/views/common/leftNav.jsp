@@ -47,10 +47,8 @@
 	<nav class="left-nav">
 		<ul>
             <li><a href="/" class="${pageContext.request.requestURI eq '/WEB-INF/views/home.jsp' ? 'active' : ''}">홈</a></li>
-       	<%--<li><a href="dashboard.jsp" class="${pageContext.request.requestURI eq '/YourWebAppName/dashboard.jsp' ? 'active' : ''}">대시보드</a></li>--%>
             <li><a href="/elecApproval" class="${pageContext.request.requestURI eq '/WEB-INF/views/elecApproval.jsp' ? 'active' : ''}">전자 결재</a></li>
             <li><a href="/users" class="${pageContext.request.requestURI eq '/WEB-INF/views/users.jsp' ? 'active' : ''}">사용자 관리</a></li>
-        <%--<li><a href="settings.jsp" class="${pageContext.request.requestURI eq '/YourWebAppName/settings.jsp' ? 'active' : ''}">설정</a></li>--%>
             <li><a href="/boards" class="${pageContext.request.requestURI eq '/WEB-INF/views/combinedList.jsp' ? 'active' : ''}">게시판</a></li>
         </ul>
 	</nav>
