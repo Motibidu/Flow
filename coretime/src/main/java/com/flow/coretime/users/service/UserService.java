@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.flow.coretime.elecApproval.model.ApproverCandidateDto;
 import com.flow.coretime.users.exception.UserAlreadyExistsException;
 import com.flow.coretime.users.mapper.UserMapper;
 import com.flow.coretime.users.model.User;
@@ -209,6 +210,10 @@ public class UserService implements UserDetailsService {
 				user.getPassword(), // 암호화된 비밀번호 (DB에서 가져온 그대로)
 				authorities // 사용자 권한 목록
 		);
+	}
+
+	public List<ApproverCandidateDto> getAllApproverCandidates() {
+		return userMapper.getAllApproverCandidates();
 	}
 
 }

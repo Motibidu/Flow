@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Param;
 import com.flow.coretime.common.enums.DepartmentType;
 import com.flow.coretime.common.enums.PositionType;
 import com.flow.coretime.common.enums.RankType;
+import com.flow.coretime.elecApproval.model.ApproverCandidateDto;
 import com.flow.coretime.users.model.User;
 
 @Mapper
@@ -29,4 +30,6 @@ public interface UserMapper {
 
 	Optional<String> findUserByDepartmentAndPosition(@Param("department") DepartmentType department,
 			@Param("position") PositionType position);
+
+        List<ApproverCandidateDto> getAllApproverCandidates();
 }

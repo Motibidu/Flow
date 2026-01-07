@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.flow.coretime.elecApproval.mapper.MyApprovalLineMapper">
+        <resultMap id="MyLineResultMap" type="com.flow.coretime.elecApproval.model.MyLineResponseDto">
+                <id property="lineId" column="line_id"/>
+                <result property="title" column="title"/>
+                <collection property="approvers" ofType="com.flow.coretime.elecApproval.model.MyLineDetailDto">
+                        <result property="approverId" column="approver_user_id"/>
+                        <result property="name" column="user_name"/>
+                        <result property="position" column="position"/> 
+                        <result property="department" column="department"/> 
+                        <result property="seq" column="seq"/>
+                </collection>
+        </resultMap>
+
+        <select id="findMyApprovalLines" resultMap="MyLineResultMap">
+                SELECT 
+                        m.id          AS line_id,
+                        m.title       AS title,
+                        d.approver_id AS approver_user_id,
+                        d.seq         AS seq,
+                        u.name        AS user_name,
+                        u.position    AS position,
+                        u.department  AS department
+                        FROM 
+                                my_approval_line m
+                        JOIN 
+                                my_approval_line_detail d ON m.id = d.line_id
+                        JOIN 
+                                users u ON d.approver_id = u.id
+                        WHERE 
+                                m.user_id = #{userId}
+                                
+                        ORDER BY 
+                                m.id DESC, d.seq ASC
+        </select>
+
+        <insert id="insertMyApprovalLine" useGeneratedKeys="true" keyProperty="id">
+                INSERT INTO my_approval_line (user_id, title)
+                        VALUES (#{userId}, #{title})
+        </insert>
+
+        <insert id="insertMyApprovalLineDetail">
+                INSERT INTO my_approval_line_detail (line_id, approver_id, seq)
+                        VALUES
+                        <foreach collection="list" item="item" separator=",">
+                                (#{item.lineId}, #{item.approverId}, #{item.seq})
+                        </foreach>
+        </insert>
+    
+        <delete id="deleteMyApprovalLine">
+                DELETE 
+                        FROM my_approval_line
+                        WHERE id = #{lineId}
+                                AND user_id = #{userId}
+        </delete>
+
+        <delete id="deleteMyApprovalLineDetail">
+                DELETE 
+                        FROM my_approval_line_detail
+                        WHERE line_id = #{lineId}
+        </delete>
+        
+        
+</mapper>

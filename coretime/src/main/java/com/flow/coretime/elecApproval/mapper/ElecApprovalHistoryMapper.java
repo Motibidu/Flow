@@ -1,6 +1,8 @@
 package com.flow.coretime.elecApproval.mapper;
 
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
+import com.flow.coretime.elecApproval.model.ElecApprovalHistoryEntity;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -9,7 +11,7 @@ import java.util.Optional;
 
 @Mapper
 public interface ElecApprovalHistoryMapper {
-        void insertApprovalHistory(ElecApprovalHistory approvalHistory);
+        void insertApprovalHistoryEntity(ElecApprovalHistory approvalHistory);
 
         void updateApprovalHistory(ElecApprovalHistory approvalHistory);
 
@@ -24,4 +26,6 @@ public interface ElecApprovalHistoryMapper {
         void insertApprovalHistories(@Param("histories") List<ElecApprovalHistory> histories);
 
         void deleteHistoryByDocId(int docId);
+
+        void insertApprovalHistoryEntities(@Param("histories") List<ElecApprovalHistoryEntity> histories);
 }

@@ -1,5 +1,6 @@
 package com.flow.coretime.elecApproval.controller;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -21,13 +22,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.flow.coretime.common.dto.ApiResponse;
 import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 import com.flow.coretime.elecApproval.enums.DocumentType;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
 import com.flow.coretime.elecApproval.model.ApprovalReq;
+import com.flow.coretime.elecApproval.model.ApproverCandidateDto;
 import com.flow.coretime.elecApproval.model.Document;
+import com.flow.coretime.elecApproval.model.DocumentReqDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
 import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
+import com.flow.coretime.elecApproval.model.MyApprovalLineEntity;
+import com.flow.coretime.elecApproval.model.MyLineResponseDto;
+import com.flow.coretime.elecApproval.model.MyLineSaveDto;
 import com.flow.coretime.elecApproval.service.ElecApprovalService;
 import com.flow.coretime.users.model.User;
 import com.flow.coretime.users.service.UserService;
@@ -62,7 +69,7 @@ public class ElecApprovalController {
                 List<Document> myApprovedDocs = elecApprovalService.selectMyApprovedDocs(currentUserId);
                 model.addAttribute("myApprovedDocs", myApprovedDocs);
 
-                return "elecApproval";
+                return "elecApproval/elecApproval";
         }
 
         @GetMapping("/new")
@@ -98,16 +105,26 @@ public class ElecApprovalController {
 
         }
 
+        @GetMapping("/approver-candidates")
+        @ResponseBody
+        public List<ApproverCandidateDto> getAllApproverCandidates() {
+                List<ApproverCandidateDto> approverCandidates = userService.getAllApproverCandidates();
+                log.info("approverCandidates: {}", approverCandidates);
+
+                return approverCandidates;
+
+        }
+
         @PostMapping("/documents")
-        public String createElecApprovalNew(@RequestBody Document document,
+        public String createElecApprovalNew(@RequestBody DocumentReqDto documentReqDTO,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                log.info("document: {}", document);
+                log.info("document: {}", documentReqDTO);
 
                 // 1. 최소한의 사용자 식별 정보만 가져옴
                 String loginId = userDetails.getUsername();
 
                 // 2. 비즈니스 로직은 Service에 전임 (document 객체와 기안자 ID만 전달)
-                elecApprovalService.createDocumentAndInitialApproval(document, loginId);
+                elecApprovalService.saveDocumentAndApprovalLine(documentReqDTO, loginId);
 
                 return "redirect:/elecApproval";
         }
@@ -183,7 +200,7 @@ public class ElecApprovalController {
         }
 
         @PostMapping("/approval/{docId}")
-        @ResponseBody // JSON 응답을 위해
+        @ResponseBody
         public ResponseEntity<Map<String, String>> approveOrRejectDocument(
                         @PathVariable("docId") int docId,
                         @RequestBody ApprovalReq approvalReq,
@@ -203,6 +220,7 @@ public class ElecApprovalController {
                 return ResponseEntity.ok(Map.of("status", "success", "message", successMessage));
         }
 
+        // 상신취소
         @PostMapping("/recall/{docId}")
         @ResponseBody
         public ResponseEntity<Map<String, String>> recall(@PathVariable(name = "docId") Long docId,
@@ -230,6 +248,39 @@ public class ElecApprovalController {
                         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                                         .body(Collections.singletonMap("message", e.getMessage()));
                 }
+        }
+
+        // 내가 저장한 결재선 조회
+        @GetMapping("/my-lines")
+        public ResponseEntity<ApiResponse<List<MyLineResponseDto>>> findMyApprovalLines(
+                        @AuthenticationPrincipal UserDetails userDetails) {
+
+                String userId = userDetails.getUsername();
+                List<MyLineResponseDto> myLines = elecApprovalService.findMyApprovalLines(userId);
+
+                return ResponseEntity.ok(ApiResponse.success(myLines));
+
+        }
+
+        // 내가 저장한 결재선 저장
+        @PostMapping("/my-lines")
+        public ResponseEntity<ApiResponse<Void>> saveMyLine(
+                        @RequestBody MyLineSaveDto myLineSaveDto,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                String userId = userDetails.getUsername();
+                elecApprovalService.saveMyApprovalLine(userId, myLineSaveDto);
+                return ResponseEntity.ok(ApiResponse.success("성공적으로 저장되었습니다."));
+        }
+
+        // 내가 저장한 결재선 삭제
+        @DeleteMapping("/my-lines/{lineId}")
+        @ResponseBody
+        public ResponseEntity<ApiResponse<Void>> deleteMyLine(
+                        @PathVariable("lineId") int lineId,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                String userId = userDetails.getUsername();
+                elecApprovalService.deleteMyApprovalLine(userId, lineId);
+                return ResponseEntity.ok(ApiResponse.success("성공적으로 삭제되었습니다."));
         }
 
 }

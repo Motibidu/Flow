@@ -18,8 +18,8 @@ public class ElecApprovalHistory {
         private int historyId;
         private int docId;
         private String approverId;
-        private int approvalOrder;
         private ApprovalStatus approvalStatus;
+        private int approvalOrder;
         private String commentText;
 
         // 승인 또는 반려가 처리된 시점

@@ -51,6 +51,26 @@
         </foreach>
     </insert>
 
+
+    <insert id="insertApprovalHistoryEntities">
+        INSERT INTO APPROVAL_HISTORY (
+            DOC_ID, 
+            APPROVER_ID, 
+            APPROVAL_STATUS,
+            ACTION_DATE,
+            APPROVAL_ORDER
+        ) VALUES 
+        <foreach collection="histories" item="h" separator=",">
+        (
+            #{h.docId}, 
+            #{h.approverId}, 
+            #{h.approvalStatus},
+            #{h.actionDate},
+            #{h.approvalOrder}
+        )
+        </foreach>
+    </insert>
+
     <update id="updateApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
         UPDATE APPROVAL_HISTORY
         SET

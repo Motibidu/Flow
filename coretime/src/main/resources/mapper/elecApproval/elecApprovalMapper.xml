@@ -54,9 +54,38 @@
             #{docType, jdbcType=VARCHAR},
             #{title, jdbcType=VARCHAR},
             #{status, jdbcType=VARCHAR},
-            NOW(), #{jsonContent, jdbcType=LONGVARCHAR}, NOW(), #{initiatorId, jdbcType=VARCHAR}
+            NOW(), 
+            #{jsonContent, jdbcType=LONGVARCHAR},
+            NOW(),
+            #{initiatorId, jdbcType=VARCHAR}
         )
     </insert>
+
+    <insert id="insertDocumentEntity" parameterType="com.flow.coretime.elecApproval.model.DocumentEntity" 
+        useGeneratedKeys="true" keyProperty="docId">
+        INSERT INTO DOCUMENTS (
+            DOC_TYPE,
+            TITLE,
+            STATUS,
+            INITIATOR_ID,
+            DRAFT_DATE,
+            JSON_CONTENT,
+            UPDATED_AT
+            
+        ) VALUES (
+            #{docType},
+            #{title},
+            #{status},
+            #{initiatorId},
+            NOW(), 
+            #{jsonContent},
+            NOW()
+        )
+    </insert>
+
+    
+
+
     <update id="updateDocumentStatus" parameterType="com.flow.coretime.elecApproval.model.Document">
         UPDATE DOCUMENTS
         SET

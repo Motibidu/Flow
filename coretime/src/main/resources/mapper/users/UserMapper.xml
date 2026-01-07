@@ -69,6 +69,30 @@
         FROM USERS
         ORDER BY CREATED_AT DESC
     </select>
+
+    <select id="getAllApproverCandidates" resultType="com.flow.coretime.elecApproval.model.ApproverCandidateDto">
+        SELECT 
+            id          AS userId,    
+            name        AS name,
+            position    AS position,    
+            department  AS department   
+        FROM 
+            users                      
+        WHERE 
+            1=1
+            AND id != 'admin'
+        ORDER BY
+            CASE 'rank_name'
+                WHEN 'CEO' THEN 1           
+                WHEN 'EXECUTIVE' THEN 2     
+                WHEN 'DIRECTOR' THEN 3      
+                WHEN 'MANAGER' THEN 4       
+                WHEN 'ASSISTANT' THEN 5     
+                WHEN 'STAFF' THEN 6         
+                ELSE 99                     
+            END ASC,
+            name ASC
+    </select>
     
     <select id="countById" resultType="int">
         SELECT COUNT(*)

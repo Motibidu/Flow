@@ -4,28 +4,38 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.web.servlet.NoHandlerFoundException;
+import com.flow.coretime.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
         @ExceptionHandler(IllegalArgumentException.class)
-        public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException e) {
-                log.error("비즈니스 로직 에러 발생: {}", e.getMessage());
+        public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
+                log.error("잘못된 요청입니다: {}", e.getMessage());
 
-                return new ResponseEntity<>(
-                                Map.of("status", "error", "message", e.getMessage()),
-                                HttpStatus.BAD_REQUEST);
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(ApiResponse.error("잘못된 요청입니다: " + e.getMessage()));
+        }
+
+        @ExceptionHandler(NoHandlerFoundException.class)
+        public ResponseEntity<ApiResponse<Void>> handle404(NoHandlerFoundException e) {
+                // ★ 에러(ERROR)가 아니라 경고(WARN)로 로그를 남김 (스택트레이스 제외)
+                log.warn("Page Not Found: {} {}", e.getHttpMethod(), e.getRequestURL());
+
+                return ResponseEntity
+                                .status(HttpStatus.NOT_FOUND)
+                                .body(ApiResponse.error("요청하신 페이지를 찾을 수 없습니다."));
         }
 
         @ExceptionHandler(Exception.class)
-        public ResponseEntity<Map<String, String>> handleGeneralException(Exception e) {
-                return new ResponseEntity<>(
-                                Map.of("status", "error", "message", "서버 오류가 발생했습니다: " + e.getMessage()),
-                                HttpStatus.INTERNAL_SERVER_ERROR);
+        public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception e) {
+                log.error("Unhandled Exception 발생: ", e);
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ApiResponse.error("서버 오류가 발생했습니다: " + e.getMessage()));
         }
 }

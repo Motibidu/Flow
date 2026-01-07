@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.flow.coretime.elecApproval.mapper.ElecApprovalMapper;
+import com.flow.coretime.elecApproval.mapper.MyApprovalLineMapper;
 import com.flow.coretime.common.enums.DepartmentType;
 import com.flow.coretime.common.enums.PositionType;
 import com.flow.coretime.common.enums.RankType;
@@ -22,8 +23,15 @@ import com.flow.coretime.elecApproval.enums.DocumentStatus;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
 import com.flow.coretime.elecApproval.model.Document;
+import com.flow.coretime.elecApproval.model.DocumentEntity;
+import com.flow.coretime.elecApproval.model.DocumentReqDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
+import com.flow.coretime.elecApproval.model.ElecApprovalHistoryEntity;
 import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
+import com.flow.coretime.elecApproval.model.MyApprovalLineDetailEntity;
+import com.flow.coretime.elecApproval.model.MyApprovalLineEntity;
+import com.flow.coretime.elecApproval.model.MyLineResponseDto;
+import com.flow.coretime.elecApproval.model.MyLineSaveDto;
 import com.flow.coretime.notification.NotificationService;
 import com.flow.coretime.users.mapper.UserMapper;
 import com.flow.coretime.users.model.User;
@@ -44,6 +52,7 @@ public class ElecApprovalService {
         private final ElecApprovalLineConfigMapper elecApprovalLineConfigMapper;
         private final UserMapper userMapper;
         private final NotificationService notificationService;
+        private final MyApprovalLineMapper myApprovalLineMapper;
 
         // 나의 결재 차례인 문서
         public List<Document> getPendingApprovals(String currentUserId) {
@@ -226,6 +235,7 @@ public class ElecApprovalService {
 
         }
 
+        // 상신 취소
         @Transactional
         public void withdrawApproval(Long docId, String userId) {
                 Map<String, Object> params = new HashMap<>();
@@ -290,7 +300,7 @@ public class ElecApprovalService {
                 }
 
                 // 3. 상태 체크: 상신취소(RECALLED) 상태일 때만 삭제 허용
-                if (!"RECALLED".equals(document.getStatus())) {
+                if (!DocumentStatus.RECALLED.equals(document.getStatus())) {
                         throw new RuntimeException("상신취소 상태인 문서만 삭제가 가능합니다.");
                 }
 
@@ -302,4 +312,86 @@ public class ElecApprovalService {
 
                 log.info("문서 및 결재선 삭제 완료 - 문서ID: {}, 실행자: {}", docId, loginId);
         }
+
+        public List<MyLineResponseDto> findMyApprovalLines(String userId) {
+                return myApprovalLineMapper.findMyApprovalLines(userId);
+        }
+
+        @Transactional
+        public void saveMyApprovalLine(String userId, MyLineSaveDto myLineSaveDto) {
+
+                MyApprovalLineEntity myApprovalLineEntity = MyApprovalLineEntity.builder()
+                                .userId(userId)
+                                .title(myLineSaveDto.getTitle())
+                                .build();
+
+                myApprovalLineMapper.insertMyApprovalLine(myApprovalLineEntity);
+
+                Long generatedLineId = myApprovalLineEntity.getId();
+
+                // 3. 상세 리스트 만들기 (ID 연결)
+                List<MyApprovalLineDetailEntity> details = new ArrayList<>();
+                List<String> approverIds = myLineSaveDto.getApproverIds();
+
+                for (int i = 0; i < approverIds.size(); i++) {
+                        MyApprovalLineDetailEntity detail = new MyApprovalLineDetailEntity();
+                        detail.setLineId(generatedLineId); // ★ 여기서 연결!
+                        detail.setApproverId(approverIds.get(i));
+                        detail.setSeq(i + 1);
+                        details.add(detail);
+                }
+
+                // 4. 상세 저장
+                if (!details.isEmpty()) {
+                        myApprovalLineMapper.insertMyApprovalLineDetail(details);
+                }
+        }
+
+        public void deleteMyApprovalLine(String userId, int lineId) {
+                myApprovalLineMapper.deleteMyApprovalLine(userId, lineId);
+                myApprovalLineMapper.deleteMyApprovalLineDetail(lineId);
+        }
+
+        public void saveDocumentAndApprovalLine(DocumentReqDto documentReqDTO, String loginId) {
+                // 1. 문서 엔티티 생성
+                DocumentEntity documentEntity = DocumentEntity.builder()
+                                .docType(documentReqDTO.getDocType())
+                                .title(documentReqDTO.getTitle())
+                                .jsonContent(documentReqDTO.getJsonContent())
+                                .initiatorId(loginId)
+                                .status(DocumentStatus.PENDING)
+                                .draftDate(new Date())
+                                .updatedAt(new Date())
+                                .build();
+
+                // 2. 문서 저장
+                elecApprovalMapper.insertDocumentEntity(documentEntity);
+
+                // 3. 결재선 생성 및 저장
+                List<ElecApprovalHistoryEntity> histories = new ArrayList<>();
+                documentReqDTO.getApproverIds().stream().forEach(approverId -> {
+                        ElecApprovalHistoryEntity history = ElecApprovalHistoryEntity.builder()
+                                        .docId(documentEntity.getDocId())
+                                        .approverId(approverId)
+                                        .approvalStatus(documentReqDTO.getApproverIds().indexOf(approverId) == 0
+                                                        ? ApprovalStatus.PENDING
+                                                        : ApprovalStatus.WAIT)
+                                        .approvalOrder(documentReqDTO.getApproverIds().indexOf(approverId) + 1)
+                                        .build();
+                        histories.add(history);
+                });
+                elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
+
+                // 4. 첫 번째 결재자에게 알림 전송
+                if (!histories.isEmpty()) {
+                        String firstApproverId = histories.get(0).getApproverId();
+                        log.info("첫 번째 결재자 알림 발송 대상: {}", firstApproverId);
+
+                        notificationService.send(firstApproverId, documentEntity.getTitle(),
+                                        "새로운 결재문서가 도착했습니다: " + documentEntity.getDocType().getDisplayName(),
+                                        "/elecApproval/detail/" + documentEntity.getDocId());
+                }
+
+        }
+
 }

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.flow.coretime.elecApproval.model.Document;
+import com.flow.coretime.elecApproval.model.DocumentEntity;
 
 @Mapper
 public interface ElecApprovalMapper {
@@ -32,5 +33,7 @@ public interface ElecApprovalMapper {
         int updateDocumentForRedraft(Document redraftData);
 
         void deleteDocument(int docId);
+
+        void insertDocumentEntity(DocumentEntity documentEntity);
 
 }
