@@ -1,10 +1,13 @@
 package com.flow.coretime.common.enums;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum PositionType {
     // 코드("DB저장명", "화면표시명", 권한레벨)
     MEMBER("MEMBER", "팀원", 1),

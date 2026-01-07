@@ -1,13 +1,14 @@
 package com.flow.coretime.common.enums;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum RankType {
-    // 코드("한글명", 서열레벨)
-    // 레벨이 높을수록 높은 직급으로 가정 (CEO가 가장 높음)
     STAFF("사원", 1),
     ASSISTANT_MANAGER("대리", 2),
     MANAGER("과장", 3),
@@ -19,7 +20,6 @@ public enum RankType {
     private final String displayName;
     private final int level;
 
-    // 특정 직급보다 높은지 확인하는 메서드 (결재 로직에서 활용 가능)
     public boolean isHigherThan(RankType other) {
         return this.level > other.level;
     }
