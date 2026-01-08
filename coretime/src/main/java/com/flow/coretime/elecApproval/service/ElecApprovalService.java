@@ -2,16 +2,21 @@ package com.flow.coretime.elecApproval.service;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.flow.coretime.elecApproval.mapper.ElecApprovalMapper;
 import com.flow.coretime.elecApproval.mapper.MyApprovalLineMapper;
@@ -22,12 +27,13 @@ import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 import com.flow.coretime.elecApproval.enums.DocumentStatus;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
+import com.flow.coretime.elecApproval.model.AttachmentEntity;
 import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.DocumentEntity;
 import com.flow.coretime.elecApproval.model.DocumentReqDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistoryEntity;
-import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
+import com.flow.coretime.elecApproval.model.ElecApprovalLineConfigEntity;
 import com.flow.coretime.elecApproval.model.MyApprovalLineDetailEntity;
 import com.flow.coretime.elecApproval.model.MyApprovalLineEntity;
 import com.flow.coretime.elecApproval.model.MyLineResponseDto;
@@ -45,6 +51,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class ElecApprovalService {
 
+        @Value("${upload.dir}")
+        private String uploadDir;
+
         private final UserService userService;
 
         private final ElecApprovalMapper elecApprovalMapper;
@@ -56,22 +65,22 @@ public class ElecApprovalService {
 
         // 나의 결재 차례인 문서
         public List<Document> getPendingApprovals(String currentUserId) {
-                return elecApprovalMapper.findDocumentsToApprove(currentUserId);
+                return elecApprovalMapper.selectDocumentsToApprove(currentUserId);
         }
 
         // 내가 기안한 진행 중 문서
         public List<Document> selectMyInProgressDocs(String currentUserId) {
-                return elecApprovalMapper.findInProgressDocumentsByInitiatorId(currentUserId);
+                return elecApprovalMapper.selectInProgressDocumentsByInitiatorId(currentUserId);
         }
 
         // 반려 및 취소된 문서
         public List<Document> selectRejectedOrRecalledDocs(String currentUserId) {
-                return elecApprovalMapper.findRejectedOrRecalledDocuments(currentUserId);
+                return elecApprovalMapper.selectRejectedOrRecalledDocuments(currentUserId);
         }
 
         // 최종 승인된 문서
         public List<Document> selectMyApprovedDocs(String currentUserId) {
-                return elecApprovalMapper.findApprovedDocumentsByInitiatorId(currentUserId);
+                return elecApprovalMapper.selectApprovedDocumentsByInitiatorId(currentUserId);
         }
 
         public void createDocument(Document document) {
@@ -115,7 +124,7 @@ public class ElecApprovalService {
 
         public List<ElecApprovalHistory> createApprovalLineHistory(Document document) {
                 // 1. 해당 문서 타입의 고정 결재선 가져오기
-                List<ElecApprovalLineConfig> configs = elecApprovalLineConfigMapper
+                List<ElecApprovalLineConfigEntity> configs = elecApprovalLineConfigMapper
                                 .getApprovalConfigList(document.getDocType());
 
                 if (configs == null || configs.isEmpty()) {
@@ -394,4 +403,80 @@ public class ElecApprovalService {
 
         }
 
+        @Transactional
+        public void createDocumentAndInitialApproval(DocumentReqDto request, List<MultipartFile> files,
+                        String loginId) {
+                // 1. 문서 엔티티 생성
+                DocumentEntity documentEntity = DocumentEntity.builder()
+                                .docType(request.getDocType())
+                                .title(request.getTitle())
+                                .jsonContent(request.getJsonContent())
+                                .initiatorId(loginId)
+                                .status(DocumentStatus.PENDING)
+                                .draftDate(new Date())
+                                .updatedAt(new Date())
+                                .build();
+
+                // 2. 문서 저장
+                elecApprovalMapper.insertDocumentEntity(documentEntity);
+                int docId = documentEntity.getDocId();
+
+                // 3. 결재선 생성 및 저장
+                if (request.getApproverIds() != null && !request.getApproverIds().isEmpty()) {
+                        List<ElecApprovalHistoryEntity> histories = new ArrayList<>();
+                        List<String> approverIds = request.getApproverIds();
+
+                        for (int i = 0; i < approverIds.size(); i++) {
+                                histories.add(ElecApprovalHistoryEntity.builder()
+                                                .docId(docId)
+                                                .approverId(approverIds.get(i))
+                                                .approvalStatus(i == 0 ? ApprovalStatus.PENDING : ApprovalStatus.WAIT)
+                                                .approvalOrder(i + 1)
+                                                .build());
+                        }
+                        elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
+
+                        // 첫 번째 결재자에게 알림 전송
+                        String firstApproverId = histories.get(0).getApproverId();
+                        notificationService.send(firstApproverId, documentEntity.getTitle(),
+                                        "새로운 결재문서가 도착했습니다: " + documentEntity.getDocType().getDisplayName(),
+                                        "/elecApproval/detail/" + docId);
+                }
+
+                // 4. 파일 저장
+                if (files != null && !files.isEmpty()) {
+                        saveFiles(docId, files);
+                }
+        }
+
+        private void saveFiles(int docId, List<MultipartFile> files) {
+                File dir = new File(uploadDir);
+                log.info("uploadDir: {}", uploadDir);
+                if (!dir.exists())
+                        dir.mkdirs();
+
+                for (MultipartFile file : files) {
+                        if (file.isEmpty())
+                                continue;
+
+                        String originName = file.getOriginalFilename();
+                        String savedName = UUID.randomUUID().toString() + "_" + originName;
+                        File dest = new File(dir, originName);
+
+                        try {
+                                file.transferTo(dest);
+                                AttachmentEntity attachment = AttachmentEntity.builder()
+                                                .docId(docId)
+                                                .originName(originName)
+                                                .savedName(savedName)
+                                                .filePath(dest.getAbsolutePath())
+                                                .fileSize(file.getSize())
+                                                .build();
+                                log.info("attachment: {}", attachment);
+                                elecApprovalMapper.insertAttachment(attachment);
+                        } catch (IOException e) {
+                                throw new RuntimeException("파일 업로드 중 오류 발생", e);
+                        }
+                }
+        }
 }

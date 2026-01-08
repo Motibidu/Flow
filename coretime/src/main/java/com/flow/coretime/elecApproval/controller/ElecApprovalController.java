@@ -14,24 +14,27 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.flow.coretime.common.dto.ApiResponse;
 import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 import com.flow.coretime.elecApproval.enums.DocumentType;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
+import com.flow.coretime.elecApproval.model.ApprovalLineConfigRespDto;
 import com.flow.coretime.elecApproval.model.ApprovalReq;
 import com.flow.coretime.elecApproval.model.ApproverCandidateDto;
 import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.DocumentReqDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
-import com.flow.coretime.elecApproval.model.ElecApprovalLineConfig;
+import com.flow.coretime.elecApproval.model.ElecApprovalLineConfigEntity;
 import com.flow.coretime.elecApproval.model.MyApprovalLineEntity;
 import com.flow.coretime.elecApproval.model.MyLineResponseDto;
 import com.flow.coretime.elecApproval.model.MyLineSaveDto;
@@ -81,20 +84,21 @@ public class ElecApprovalController {
                 model.addAttribute("currentUserDepartment", currentUser.getDepartment().getDisplayName());
 
                 if (DocumentType.VACATION_REQUEST.toString().equals(formType)) {
-                        List<ElecApprovalLineConfig> approvalLines = elecApprovalLineConfigMapper
-                                        .getApprovalConfigList(DocumentType.VACATION_REQUEST);
+                        List<ApprovalLineConfigRespDto> approvalLines = elecApprovalLineConfigMapper
+                                        .getApprovalLineConfigRespDto(currentUser.getDepartment(),
+                                                        DocumentType.VACATION_REQUEST);
                         log.info("approvalLines: {}", approvalLines);
                         model.addAttribute("approvalLines", approvalLines);
 
                         return "elecApproval/vacationRequestForm";
                 } else if (DocumentType.EXPENSE_REPORT.toString().equals(formType)) {
-                        List<ElecApprovalLineConfig> approvalLines = elecApprovalLineConfigMapper
+                        List<ElecApprovalLineConfigEntity> approvalLines = elecApprovalLineConfigMapper
                                         .getApprovalConfigList(DocumentType.EXPENSE_REPORT);
                         model.addAttribute("approvalLines", approvalLines);
 
                         return "elecApproval/expenseReportForm";
                 } else if (DocumentType.GENERAL_PROPOSAL.toString().equals(formType)) {
-                        List<ElecApprovalLineConfig> approvalLines = elecApprovalLineConfigMapper
+                        List<ElecApprovalLineConfigEntity> approvalLines = elecApprovalLineConfigMapper
                                         .getApprovalConfigList(DocumentType.GENERAL_PROPOSAL);
                         model.addAttribute("approvalLines", approvalLines);
 
@@ -116,17 +120,18 @@ public class ElecApprovalController {
         }
 
         @PostMapping("/documents")
-        public String createElecApprovalNew(@RequestBody DocumentReqDto documentReqDTO,
+        @ResponseBody
+        public ResponseEntity<ApiResponse<Void>> createDocument(
+                        @ModelAttribute DocumentReqDto request,
+                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                log.info("document: {}", documentReqDTO);
 
-                // 1. 최소한의 사용자 식별 정보만 가져옴
-                String loginId = userDetails.getUsername();
+                log.info("request: {}", request);
+                log.info("files: {}", files != null ? files.size() : 0);
 
-                // 2. 비즈니스 로직은 Service에 전임 (document 객체와 기안자 ID만 전달)
-                elecApprovalService.saveDocumentAndApprovalLine(documentReqDTO, loginId);
+                elecApprovalService.createDocumentAndInitialApproval(request, files, userDetails.getUsername());
 
-                return "redirect:/elecApproval";
+                return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
         }
 
         @GetMapping("/detail/{docId}")

@@ -4,26 +4,26 @@
 <mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper">
 
     <resultMap id="approvalHistoryResultMap" type="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
-        <id property="historyId" column="HISTORY_ID"/>
-        <result property="docId" column="DOC_ID"/>
-        <result property="approverId" column="APPROVER_ID"/>
-        <result property="approvalOrder" column="APPROVAL_ORDER"/> 
-        <result property="approvalStatus" column="APPROVAL_STATUS"/>
-        <result property="commentText" column="COMMENTS"/>    
-        <result property="actionDate" column="ACTION_DATE"/>     
-        <result property="approverName" column="APPROVER_NAME"/>
-        <result property="approverRank" column="APPROVER_RANK"/>
+        <id property="historyId" column="history_id"/>
+        <result property="docId" column="doc_id"/>
+        <result property="approverId" column="approver_id"/>
+        <result property="approvalOrder" column="approval_order"/> 
+        <result property="approvalStatus" column="approval_status"/>
+        <result property="commentText" column="comments"/>    
+        <result property="actionDate" column="action_date"/>     
+        <result property="approverName" column="approver_name"/>
+        <result property="approverRank" column="approver_rank"/>
     </resultMap>
 
     <insert id="insertApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory"
         useGeneratedKeys="true" keyProperty="historyId">
-        INSERT INTO APPROVAL_HISTORY (
-            DOC_ID,
-            APPROVER_ID,
-            APPROVAL_STATUS,
-            COMMENTS,
-            ACTION_DATE,
-            APPROVAL_ORDER
+        INSERT INTO approval_history (
+            doc_id,
+            approver_id,
+            approval_status,
+            comments,
+            action_date,
+            approval_order
         ) VALUES (
             #{docId},
             #{approverId},
@@ -33,12 +33,12 @@
     </insert>
 
     <insert id="insertApprovalHistories">
-        INSERT INTO APPROVAL_HISTORY (
-            DOC_ID, 
-            APPROVER_ID, 
-            APPROVAL_ORDER, 
-            APPROVAL_STATUS,
-            ACTION_DATE
+        INSERT INTO approval_history (
+            doc_id, 
+            approver_id, 
+            approval_order, 
+            approval_status,
+            action_date
         ) VALUES 
         <foreach collection="histories" item="h" separator=",">
         (
@@ -53,12 +53,12 @@
 
 
     <insert id="insertApprovalHistoryEntities">
-        INSERT INTO APPROVAL_HISTORY (
-            DOC_ID, 
-            APPROVER_ID, 
-            APPROVAL_STATUS,
-            ACTION_DATE,
-            APPROVAL_ORDER
+        INSERT INTO approval_history (
+            doc_id, 
+            approver_id, 
+            approval_status,
+            action_date,
+            approval_order
         ) VALUES 
         <foreach collection="histories" item="h" separator=",">
         (
@@ -72,80 +72,80 @@
     </insert>
 
     <update id="updateApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
-        UPDATE APPROVAL_HISTORY
+        UPDATE approval_history
         SET
-            APPROVAL_STATUS = #{approvalStatus},
-            COMMENTS = #{commentText}, 
-            ACTION_DATE = #{actionDate}
+            approval_status = #{approvalStatus},
+            comments = #{commentText}, 
+            action_date = #{actionDate}
         WHERE
-            HISTORY_ID = #{historyId}
+            history_id = #{historyId}
     </update>
 
     <select id="findCurrentPendingApproval" resultMap="approvalHistoryResultMap">
         SELECT
-            HISTORY_ID,
-            DOC_ID,
-            APPROVER_ID,
-            APPROVAL_ORDER,
-            APPROVAL_STATUS,
-            COMMENTS,
-            ACTION_DATE
+            history_id,
+            doc_id,
+            approver_id,
+            approval_order,
+            approval_status,
+            comments,
+            action_date
         FROM
-            APPROVAL_HISTORY
+            approval_history
         WHERE
-            DOC_ID = #{docId}
-            AND APPROVAL_STATUS = 'PENDING'
+            doc_id = #{docId}
+            AND approval_status = 'PENDING'
         ORDER BY
-            APPROVAL_ORDER ASC
+            approval_order ASC
         LIMIT 1 
     </select>
 
     <select id="findNextApprover" resultMap="approvalHistoryResultMap">
         SELECT
-            AH.HISTORY_ID,
-            AH.DOC_ID,
-            AH.APPROVER_ID,
-            AH.APPROVAL_ORDER,
-            AH.APPROVAL_STATUS,
-            AH.COMMENTS,
-            AH.ACTION_DATE,
-            U.NAME AS APPROVER_NAME,
-            U.RANK_NAME AS APPROVER_RANK FROM
-            APPROVAL_HISTORY AH
+            AH.history_id,
+            AH.doc_id,
+            AH.approver_id,
+            AH.approval_order,
+            AH.approval_status,
+            AH.comments,
+            AH.action_date,
+            U.name AS approver_name,
+            U.rank_name AS approver_rank FROM
+            approval_history AH
         JOIN
-            USERS U ON AH.APPROVER_ID = U.ID
+            users U ON AH.approver_id = U.id
         WHERE
-            AH.DOC_ID = #{docId}
-            AND AH.APPROVAL_ORDER = #{currentOrder} + 1
+            AH.doc_id = #{docId}
+            AND AH.approval_order = #{currentOrder} + 1
         ORDER BY
-            AH.APPROVAL_ORDER ASC
+            AH.approval_order ASC
         LIMIT 1 
     </select>
 
         <delete id="deleteHistoryByDocId" parameterType="int">
-            DELETE FROM APPROVAL_HISTORY
-            WHERE DOC_ID = #{docId}
+            DELETE FROM approval_history
+            WHERE doc_id = #{docId}
         </delete>
 
     <select id="findApprovalHistoryByDocId" resultMap="approvalHistoryResultMap">
         SELECT
-            AH.HISTORY_ID,
-            AH.DOC_ID,
-            AH.APPROVER_ID,
-            AH.APPROVAL_ORDER,
-            AH.APPROVAL_STATUS,
-            AH.COMMENTS,
-            AH.ACTION_DATE,
-            U.NAME AS APPROVER_NAME,
-            U.RANK_NAME AS APPROVER_RANK
+            AH.history_id,
+            AH.doc_id,
+            AH.approver_id,
+            AH.approval_order,
+            AH.approval_status,
+            AH.comments,
+            AH.action_date,
+            U.name AS approver_name,
+            U.rank_name AS approver_rank
         FROM
-            APPROVAL_HISTORY AH
+            approval_history AH
         JOIN
-            USERS U ON AH.APPROVER_ID = U.ID
+            users U ON AH.approver_id = U.id
         WHERE
-            AH.DOC_ID = #{docId}
+            AH.doc_id = #{docId}
         ORDER BY
-            AH.APPROVAL_ORDER ASC
+            AH.approval_order ASC
     </select>
 
 

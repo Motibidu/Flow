@@ -36,6 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 .metadata/
-C:\DevData\Flow\coretime\src\main\webapp\resources\upload\37a67f90-8b04-4e88-95a8-6cfb16f482c6.jpg
+src/main/webapp/resources/uploads/**
 
 application-local.properties

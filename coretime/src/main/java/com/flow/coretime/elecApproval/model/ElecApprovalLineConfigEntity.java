@@ -1,15 +1,14 @@
 package com.flow.coretime.elecApproval.model;
 
 import java.time.LocalDateTime;
-
 import com.flow.coretime.common.enums.DepartmentType;
 import com.flow.coretime.common.enums.PositionType;
 import com.flow.coretime.elecApproval.enums.DocumentType;
-
 import lombok.Data;
 
+// 고정 결재선
 @Data
-public class ElecApprovalLineConfig {
+public class ElecApprovalLineConfigEntity {
         private Integer configId; // 설정 고유 번호
         private DocumentType docType; // 문서 종류
         private PositionType position; // 직급

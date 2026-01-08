@@ -1,11 +1,11 @@
 CREATE TABLE APPROVAL_HISTORY (
-    HISTORY_ID INT AUTO_INCREMENT PRIMARY KEY,
-    DOC_ID INT NOT NULL,                    -- 문서 ID
-    APPROVER_ID VARCHAR(50) NOT NULL,       -- 결재자 ID
-    ACTION VARCHAR(20) DEFAULT 'PENDING',   -- 결재 액션 (PENDING, APPROVED, REJECTED)
-    COMMENTS TEXT,                          -- 결재 의견
-    ACTION_DATE DATETIME,                   -- 결재 처리 일시
-    STEP_ORDER INT,                         -- 결재 순서
-    FOREIGN KEY (DOC_ID) REFERENCES DOCUMENTS(DOC_ID) ON DELETE CASCADE,
-    FOREIGN KEY (APPROVER_ID) REFERENCES USERS(ID)
+    history_id INT AUTO_INCREMENT PRIMARY KEY,
+    doc_id INT NOT NULL,                    -- 문서 ID
+    approver_id VARCHAR(50) NOT NULL,       -- 결재자 ID
+    approval_status VARCHAR(20) NOT NULL,   -- 결재 상태 (PENDING, APPROVED, REJECTED
+    comments TEXT,                          -- 결재 의견
+    action_date DATETIME,                   -- 결재 처리 일시
+    approval_order INT,                         -- 결재 순서
+    FOREIGN KEY (doc_id) REFERENCES DOCUMENTS(doc_id) ON DELETE CASCADE,
+    FOREIGN KEY (approver_id) REFERENCES USERS(id)
 );

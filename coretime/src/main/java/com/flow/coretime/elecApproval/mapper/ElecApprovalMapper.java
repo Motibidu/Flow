@@ -7,33 +7,41 @@ import java.util.Optional;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.flow.coretime.elecApproval.model.AttachmentEntity;
 import com.flow.coretime.elecApproval.model.Document;
 import com.flow.coretime.elecApproval.model.DocumentEntity;
 
 @Mapper
 public interface ElecApprovalMapper {
-        List<Document> findDocumentsToApprove(@Param("approverId") String approverId);
+        // select
+        List<Document> selectDocumentsToApprove(@Param("approverId") String approverId);
 
-        List<Document> findInProgressDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
+        List<Document> selectInProgressDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
 
-        List<Document> findRejectedOrRecalledDocuments(String currentUserId);
+        List<Document> selectRejectedOrRecalledDocuments(String currentUserId);
 
-        List<Document> findApprovedDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
-
-        void insertDocument(Document document);
+        List<Document> selectApprovedDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
 
         Optional<Document> getDocumentById(@Param("docId") int docId);
 
+        // insert
+        void insertDocument(Document document);
+
+        void insertDocumentEntity(DocumentEntity documentEntity);
+
+        void insertAttachment(AttachmentEntity attachment);
+
+        // update
         void updateDocumentStatus(Document document);
-
-        int cancelApproval(Map<String, Object> params);
-
-        void deletePendingHistory(Long docId);
 
         int updateDocumentForRedraft(Document redraftData);
 
+        // delete
         void deleteDocument(int docId);
 
-        void insertDocumentEntity(DocumentEntity documentEntity);
+        void deletePendingHistory(Long docId);
+
+        // etc
+        int cancelApproval(Map<String, Object> params);
 
 }

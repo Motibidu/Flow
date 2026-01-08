@@ -128,6 +128,12 @@
                                    value="${empty document ? '010-' : ''}">
                         </td>
                     </tr>
+                    <tr>
+                        <th>첨부파일</th>
+                        <td>
+                            <input type="file" id="attachments" name="attachments" class="form-control" multiple>
+                        </td>
+                    </tr>
                 </table>
             </div>
 
@@ -220,21 +226,13 @@
             } catch (e) { console.error("데이터 파싱 실패", e); }
         }
 
-        // B. 결재선 로드 (에러 수정됨: approverId 제거, configId 사용)
         <c:if test="${not empty approvalLines}">
             <c:forEach items="${approvalLines}" var="line">
                 selectedApprovers.push({
-                    // [중요] approverId 대신 configId 사용 (Config 객체이기 때문)
-                    id: "CONFIG_${line.configId}", 
-                    
-                    // 이름은 직위 이름 사용
-                    name: "${line.position.displayName}", 
-                    
-                    // 직위 정보
+                    id: "${line.userId}", 
+                    name: "${line.userName}", 
                     position: "${line.position.displayName}",
-                    
-                    // 자동 타입
-                    type: "AUTO"
+                    department: "${line.department.displayName}"
                 });
             </c:forEach>
             renderApprovers(); 
@@ -513,14 +511,19 @@
         const docId = '${document.docId}';
         const url = (docId && docId !== '') ? '/elecApproval/redraft/' + docId : '/elecApproval/documents';
 
-        const submitData = {
-            title: document.getElementById('title').value,
-            docType: 'VACATION_REQUEST',
-            jsonContent: jsonContentStr,
-            approverIds: approverIds
-        };
+        const formData = new FormData();
+        formData.append('title', document.getElementById('title').value);
+        formData.append('docType', 'VACATION_REQUEST');
+        formData.append('jsonContent', jsonContentStr);
+        
+        approverIds.forEach(id => formData.append('approverIds', id));
 
-        axios.post(url, submitData)
+        const fileInput = document.getElementById('attachments');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
+        }
+
+        axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
             .then(res => {
                 alert("정상적으로 처리되었습니다.");
                 location.href = "/elecApproval";

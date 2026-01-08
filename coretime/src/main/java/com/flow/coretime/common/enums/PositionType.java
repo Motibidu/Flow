@@ -9,11 +9,11 @@ import lombok.Getter;
 @AllArgsConstructor
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum PositionType {
-    // 코드("DB저장명", "화면표시명", 권한레벨)
     MEMBER("MEMBER", "팀원", 1),
     TEAM_LEADER("TEAM_LEADER", "팀장", 2),
     HEAD("HEAD", "본부장", 3),
-    CEO("CEO", "대표이사", 4);
+    CEO("CEO", "대표이사", 4),
+    ADMIN("ADMIN", "관리자", 5);
 
     private final String code;
     private final String displayName;

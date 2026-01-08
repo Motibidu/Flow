@@ -3,53 +3,53 @@
 
 <mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalMapper">
     <resultMap id="documentResultMap" type="com.flow.coretime.elecApproval.model.Document" >
-        <id property="docId" column="DOC_ID"/>
-        <result property="docType" column="DOC_TYPE"/>
-        <result property="title" column="TITLE"/>
-        <result property="status" column="STATUS"/>
-        <result property="initiatorId" column="INITIATOR_ID"/>
-        <result property="draftDate" column="DRAFT_DATE"/>
-        <result property="jsonContent" column="JSON_CONTENT"/>
-        <result property="updatedAt" column="UPDATED_AT"/>
+        <id property="docId" column="doc_id"/>
+        <result property="docType" column="doc_type"/>
+        <result property="title" column="title"/>
+        <result property="status" column="status"/>
+        <result property="initiatorId" column="initiator_id"/>
+        <result property="draftDate" column="draft_date"/>
+        <result property="jsonContent" column="json_content"/>
+        <result property="updatedAt" column="updated_at"/>
 
-        <result property="initiatorId" column="INITIATOR_ID"/>
-        <result property="initiatorName" column="INITIATOR_NAME"/>
-        <result property="initiatorDepartment" column="INITIATOR_DEPARTMENT"/>
-        <result property="initiatorRank" column="INITIATOR_RANK"/>
-        <result property="currentApproverName" column="CURRENT_APPROVER_NAME"/>
+        <result property="initiatorId" column="initiator_id"/>
+        <result property="initiatorName" column="initiator_name"/>
+        <result property="initiatorDepartment" column="initiator_department"/>
+        <result property="initiatorRank" column="initiator_rank"/>
+        <result property="currentApproverName" column="current_approver_name"/>
     </resultMap>
 
 
     <select id="getDocumentById" resultMap="documentResultMap">
         SELECT 
-                D.doc_id,
-                D.doc_type,
-                D.title,
-                D.status,
-                D.initiator_id,
-                D.draft_date,
-                D.json_content,
-                D.updated_at,
-                U.id AS initiator_id,
-                U.name AS initiator_name,
-                U.department AS initiator_department,
-                U.rank_name AS initiator_rank
-        FROM DOCUMENTS D
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM documents d
         JOIN
-            USERS U ON D.INITIATOR_ID = U.ID
+            users u ON d.initiator_id = u.id
         WHERE doc_id= #{docId}
     </select>
 
     <insert id="insertDocument" parameterType="com.flow.coretime.elecApproval.model.Document" 
         useGeneratedKeys="true" keyProperty="docId">
-        INSERT INTO DOCUMENTS (
-            DOC_TYPE,
-            TITLE,
-            STATUS,
-            DRAFT_DATE,
-            JSON_CONTENT,
-            UPDATED_AT,
-            INITIATOR_ID
+        INSERT INTO documents (
+            doc_type,
+            title,
+            status,
+            draft_date,
+            json_content,
+            updated_at,
+            initiator_id
         ) VALUES (
             #{docType, jdbcType=VARCHAR},
             #{title, jdbcType=VARCHAR},
@@ -63,14 +63,14 @@
 
     <insert id="insertDocumentEntity" parameterType="com.flow.coretime.elecApproval.model.DocumentEntity" 
         useGeneratedKeys="true" keyProperty="docId">
-        INSERT INTO DOCUMENTS (
-            DOC_TYPE,
-            TITLE,
-            STATUS,
-            INITIATOR_ID,
-            DRAFT_DATE,
-            JSON_CONTENT,
-            UPDATED_AT
+        INSERT INTO documents (
+            doc_type,
+            title,
+            status,
+            initiator_id,
+            draft_date,
+            json_content,
+            updated_at
             
         ) VALUES (
             #{docType},
@@ -87,154 +87,171 @@
 
 
     <update id="updateDocumentStatus" parameterType="com.flow.coretime.elecApproval.model.Document">
-        UPDATE DOCUMENTS
+        UPDATE documents
         SET
-            STATUS = #{status, jdbcType=VARCHAR},
-            UPDATED_AT = #{updatedAt, jdbcType=TIMESTAMP}
+            status = #{status, jdbcType=VARCHAR},
+            updated_at = #{updatedAt, jdbcType=TIMESTAMP}
         WHERE
-            DOC_ID = #{docId}
+            doc_id = #{docId}
     </update>
 
 
     <update id="cancelApproval" parameterType="map">
-        UPDATE DOCUMENTS
+        UPDATE documents
         SET 
-            STATUS= 'RECALLED',
-            UPDATED_AT= NOW()
+            status= 'RECALLED',
+            updated_at= NOW()
         WHERE
-            DOC_ID= #{docId}
-            AND INITIATOR_ID = #{userId}
-            AND STATUS = 'PENDING'
+            doc_id= #{docId}
+            AND initiator_id = #{userId}
+            AND status = 'PENDING'
     </update>
 
     <delete id="deletePendingHistory" parameterType="long">
-        DELETE FROM APPROVAL_HISTORY 
+        DELETE FROM approval_history 
         WHERE 
-            DOC_ID = #{docId} 
-            AND APPROVAL_STATUS = 'PENDING'
+            doc_id = #{docId} 
+            AND approval_status = 'PENDING'
     </delete>
     
-    <select id="findDocumentsToApprove" resultMap="documentResultMap">
+    <select id="selectDocumentsToApprove" resultMap="documentResultMap">
         SELECT
-            D.DOC_ID,
-            D.DOC_TYPE,
-            D.TITLE,
-            D.STATUS,
-            D.INITIATOR_ID,
-            D.DRAFT_DATE,
-            D.JSON_CONTENT,
-            D.UPDATED_AT,
-            U_INITIATOR.NAME AS INITIATOR_NAME,         
-            U_INITIATOR.DEPARTMENT AS INITIATOR_DEPARTMENT 
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at,
+            u_initiator.name AS initiator_name,         
+            u_initiator.department AS initiator_department 
         FROM
-            DOCUMENTS D
+            documents d
         JOIN
-            APPROVAL_HISTORY AH ON D.DOC_ID = AH.DOC_ID 
+            approval_history ah ON d.doc_id = ah.doc_id 
         JOIN
-            USERS U_INITIATOR ON D.INITIATOR_ID = U_INITIATOR.ID 
+            users u_initiator ON d.initiator_id = u_initiator.id 
         WHERE
-            AH.APPROVER_ID = #{approverId}
-            AND AH.APPROVAL_STATUS = 'PENDING'
+            ah.approver_id = #{approverId}
+            AND ah.approval_status = 'PENDING'
         ORDER BY
-            D.DRAFT_DATE DESC
+            d.draft_date DESC
     </select>
 
-    <select id="findRejectedOrRecalledDocuments" resultMap="documentResultMap">
+    <select id="selectRejectedOrRecalledDocuments" resultMap="documentResultMap">
     SELECT
-        D.DOC_ID,
-        D.DOC_TYPE,
-        D.TITLE,
-        D.STATUS,
-        D.INITIATOR_ID,
-        D.DRAFT_DATE,
-        D.JSON_CONTENT,
-        D.UPDATED_AT,
+        d.doc_id,
+        d.doc_type,
+        d.title,
+        d.status,
+        d.initiator_id,
+        d.draft_date,
+        d.json_content,
+        d.updated_at,
         /* 기안자 정보 JOIN (필요할 경우) */
-        U.NAME AS INITIATOR_NAME,
-        U.DEPARTMENT AS INITIATOR_DEPARTMENT
+        u.name AS initiator_name,
+        u.department AS initiator_department
     FROM
-        DOCUMENTS D
+        documents d
     LEFT JOIN 
-        USERS U ON D.INITIATOR_ID = U.ID
+        users u ON d.initiator_id = u.id
     WHERE
-        D.INITIATOR_ID = #{initiatorId}
-        AND D.STATUS IN ('REJECTED', 'RECALLED')
+        d.initiator_id = #{initiatorId}
+        AND d.status IN ('REJECTED', 'RECALLED')
     ORDER BY
-        D.UPDATED_AT DESC
+        d.updated_at DESC
 </select>
 
-    <select id="findInProgressDocumentsByInitiatorId" resultMap="documentResultMap">
+    <select id="selectInProgressDocumentsByInitiatorId" resultMap="documentResultMap">
         SELECT
-        D.DOC_ID,
-        D.DOC_TYPE,
-        D.TITLE,
-        D.STATUS,
-        D.INITIATOR_ID,
-        D.DRAFT_DATE,
-        D.JSON_CONTENT,
-        D.UPDATED_AT
+        d.doc_id,
+        d.doc_type,
+        d.title,
+        d.status,
+        d.initiator_id,
+        d.draft_date,
+        d.json_content,
+        d.updated_at
         FROM
-        DOCUMENTS D
+        documents d
     WHERE
-        D.INITIATOR_ID = #{initiatorId}
-        AND D.STATUS IN ('PENDING', 'IN_PROGRESS') 
+        d.initiator_id = #{initiatorId}
+        AND d.status IN ('PENDING', 'IN_PROGRESS') 
     ORDER BY
-        D.DRAFT_DATE DESC
+        d.draft_date DESC
     </select>
 
     <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.Document">
-        UPDATE DOCUMENTS
+        UPDATE documents
         SET
-            TITLE = #{title},
-            JSON_CONTENT = #{jsonContent},
-            STATUS = 'PENDING',
-            UPDATED_AT = NOW()
+            title = #{title},
+            json_content = #{jsonContent},
+            status = 'PENDING',
+            updated_at = NOW()
         WHERE
-            DOC_ID = #{docId}
-            AND STATUS IN ('REJECTED', 'RECALLED')
+            doc_id = #{docId}
+            AND status IN ('REJECTED', 'RECALLED')
     </update>
 
     <select id="getDocumentDetail" resultMap="documentResultMap">
         SELECT 
-            D.DOC_ID,
-            D.DOC_TYPE,
-            D.TITLE,
-            D.STATUS,
-            D.INITIATOR_ID,
-            D.DRAFT_DATE,
-            D.JSON_CONTENT,
-            D.UPDATED_AT,
-            U.NAME AS INITIATOR_NAME,
-            U.DEPARTMENT AS INITIATOR_DEPARTMENT
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at,
+            u.name AS initiator_name,
+            u.department AS initiator_department
         FROM 
-            DOCUMENTS D
+            documents d
         LEFT JOIN 
-            USERS U ON D.INITIATOR_ID = U.ID
+            users u ON d.initiator_id = u.id
         WHERE 
-            D.DOC_ID = #{docId}
+            d.doc_id = #{docId}
     </select>
 
-    <select id="findApprovedDocumentsByInitiatorId" resultMap="documentResultMap">
+    <select id="selectApprovedDocumentsByInitiatorId" resultMap="documentResultMap">
         SELECT
-            D.DOC_ID,
-            D.DOC_TYPE,
-            D.TITLE,
-            D.STATUS,
-            D.INITIATOR_ID,
-            D.DRAFT_DATE,
-            D.JSON_CONTENT,
-            D.UPDATED_AT
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at
         FROM
-        DOCUMENTS D
+        documents d
     WHERE
-        D.INITIATOR_ID = #{initiatorId}
-        AND D.STATUS= 'APPROVED'
+        d.initiator_id = #{initiatorId}
+        AND d.status= 'APPROVED'
     ORDER BY
-        D.DRAFT_DATE DESC
+        d.draft_date DESC
     </select>
 
     <delete id="deleteDocument" parameterType="int">
-        DELETE FROM DOCUMENTS
-        WHERE DOC_ID = #{docId}
+        DELETE FROM documents
+        WHERE doc_id = #{docId}
     </delete>
+
+
+    <insert id="insertAttachment" parameterType="com.flow.coretime.elecApproval.model.AttachmentEntity">
+        INSERT INTO attachment (
+            doc_id, 
+            origin_name, 
+            saved_name, 
+            file_path, 
+            file_size
+        ) VALUES (
+            #{docId}, 
+            #{originName}, 
+            #{savedName}, 
+            #{filePath}, 
+            #{fileSize}
+        )
+    </insert>
 </mapper>
