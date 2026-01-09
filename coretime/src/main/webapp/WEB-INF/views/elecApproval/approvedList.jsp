@@ -29,16 +29,31 @@
                                     </td>
                                     <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                     <td>${doc.docType.displayName}</td>
-                                    <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                                    <td><span class="status-badge status-${doc.status}">${doc.status.displayName}</span></td>
                                 </tr>
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
-                            <tr><td colspan="5" class="no-data">완료된 결재 문서가 없습니다.</td></tr>
+                            <tr><td colspan="5" class="no-data">완료된 문서가 없습니다.</td></tr>
                         </c:otherwise>
                     </c:choose>
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" style="margin-top: 20px;">
+                <ul class="pagination justify-content-center">
+                    <c:if test="${pageInfo.hasPreviousPage}">
+                        <li class="page-item"><a class="page-link" href="?page=${pageInfo.prePage}&size=${pageInfo.pageSize}">이전</a></li>
+                    </c:if>
+                    <c:forEach begin="${pageInfo.navigateFirstPage}" end="${pageInfo.navigateLastPage}" var="pageNum">
+                        <li class="page-item ${pageNum == pageInfo.pageNum ? 'active' : ''}"><a class="page-link" href="?page=${pageNum}&size=${pageInfo.pageSize}">${pageNum}</a></li>
+                    </c:forEach>
+                    <c:if test="${pageInfo.hasNextPage}">
+                        <li class="page-item"><a class="page-link" href="?page=${pageInfo.nextPage}&size=${pageInfo.pageSize}">다음</a></li>
+                    </c:if>
+                </ul>
+            </nav>
         </div>
         <div style="text-align: right; margin-top: 20px;">
             <button class="btn btn-outline" onclick="location.href='/elecApproval'">← 대시보드로 돌아가기</button>

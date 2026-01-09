@@ -6,7 +6,7 @@
 <t:layout title="반려 및 취소 문서">
     <link rel="stylesheet" href="/resources/css/list.css">
     <div class="main">
-        <h1>⚠️ 반려 및 취소된 문서</h1>
+        <h1>⚠️ 반려 및 취소 문서</h1>
         
         <div class="widget">
             <table class="data-table">
@@ -15,7 +15,7 @@
                 </colgroup>
                 <thead>
                     <tr>
-                        <th>NO</th> <th>제목</th> <th>기안일</th> <th>양식</th> <th>현재 상태</th>
+                        <th>NO</th> <th>제목</th> <th>기안일</th> <th>양식</th> <th>상태</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,7 +29,7 @@
                                     </td>
                                     <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                     <td>${doc.docType.displayName}</td>
-                                    <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                                    <td><span class="status-badge status-${doc.status}">${doc.status.displayName}</span></td>
                                 </tr>
                             </c:forEach>
                         </c:when>
@@ -39,6 +39,21 @@
                     </c:choose>
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" style="margin-top: 20px;">
+                <ul class="pagination justify-content-center">
+                    <c:if test="${pageInfo.hasPreviousPage}">
+                        <li class="page-item"><a class="page-link" href="?page=${pageInfo.prePage}&size=${pageInfo.pageSize}">이전</a></li>
+                    </c:if>
+                    <c:forEach begin="${pageInfo.navigateFirstPage}" end="${pageInfo.navigateLastPage}" var="pageNum">
+                        <li class="page-item ${pageNum == pageInfo.pageNum ? 'active' : ''}"><a class="page-link" href="?page=${pageNum}&size=${pageInfo.pageSize}">${pageNum}</a></li>
+                    </c:forEach>
+                    <c:if test="${pageInfo.hasNextPage}">
+                        <li class="page-item"><a class="page-link" href="?page=${pageInfo.nextPage}&size=${pageInfo.pageSize}">다음</a></li>
+                    </c:if>
+                </ul>
+            </nav>
         </div>
         <div style="text-align: right; margin-top: 20px;">
             <button class="btn btn-outline" onclick="location.href='/elecApproval'">← 대시보드로 돌아가기</button>

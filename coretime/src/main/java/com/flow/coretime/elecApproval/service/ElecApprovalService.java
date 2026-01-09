@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalMapper;
 import com.flow.coretime.elecApproval.mapper.MyApprovalLineMapper;
 import com.flow.coretime.common.enums.DepartmentType;
@@ -570,24 +572,36 @@ public class ElecApprovalService {
                 }
         }
 
-        public List<DocumentRespDto> findAllPendingOrInProgress(String username) {
-                return elecApprovalMapper.selectAllPendingOrInProgress(username);
+        public PageInfo<DocumentRespDto> findAllPendingOrInProgress(String username, int page, int size) {
+                PageHelper.startPage(page, size);
+                List<DocumentRespDto> list = elecApprovalMapper.selectAllPendingOrInProgress(username);
+                return new PageInfo<>(list);
         }
 
-        public List<DocumentRespDto> findAllRejectedOrRecalled(String username) {
-                return elecApprovalMapper.selectAllRejectedOrRecalled(username);
+        public PageInfo<DocumentRespDto> findAllRejectedOrRecalled(String username, int page, int size) {
+                PageHelper.startPage(page, size);
+                List<DocumentRespDto> list = elecApprovalMapper.selectAllRejectedOrRecalled(username);
+                return new PageInfo<>(list);
+
         }
 
-        public List<DocumentRespDto> findAllApproved(String username) {
-                return elecApprovalMapper.selectAllApproved(username);
+        public PageInfo<DocumentRespDto> findAllApproved(String username, int page, int size) {
+                PageHelper.startPage(page, size);
+                List<DocumentRespDto> list = elecApprovalMapper.selectAllApproved(username);
+                return new PageInfo<>(list);
+
         }
 
-        public List<DocumentRespDto> findAllTemp(String username) {
-                return elecApprovalMapper.selectAllTemp(username);
+        public PageInfo<DocumentRespDto> findAllTemp(String username, int page, int size) {
+                PageHelper.startPage(page, size);
+                List<DocumentRespDto> list = elecApprovalMapper.selectAllTemp(username);
+                return new PageInfo<>(list);
+
         }
 
-        public List<DocumentRespDto> findAllMyTurn(String username) {
-                return elecApprovalMapper.selectAllMyTurn(username);
-
+        public PageInfo<DocumentRespDto> findAllMyTurn(String username, int page, int size) {
+                PageHelper.startPage(page, size);
+                List<DocumentRespDto> list = elecApprovalMapper.selectAllMyTurn(username);
+                return new PageInfo<>(list);
         }
 }

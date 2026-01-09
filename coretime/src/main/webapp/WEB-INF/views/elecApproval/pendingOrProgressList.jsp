@@ -22,8 +22,6 @@
                         <c:choose>
                             <c:when test="${not empty docList}">
                                 <c:forEach var="doc" items="${docList}">
-                            <c:when test="${not empty pageInfo.list}">
-                                <c:forEach var="doc" items="${pageInfo.list}">
                                     <tr>
                                         <td>${doc.docId}</td>
                                         <td style="text-align: left; padding-left: 15px;">

@@ -20,8 +20,8 @@
                 </thead>
                 <tbody>
                     <c:choose>
-                        <c:when test="${not empty myTurnList}">
-                            <c:forEach var="doc" items="${myTurnList}">
+                        <c:when test="${not empty docList}">
+                            <c:forEach var="doc" items="${docList}">
                                 <tr>
                                     <td>${doc.docId}</td>
                                     <td>${doc.docType.displayName}</td>
@@ -44,6 +44,28 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Page navigation" style="margin-top: 20px;">
+            <ul class="pagination justify-content-center">
+                <c:if test="${pageInfo.hasPreviousPage}">
+                    <li class="page-item">
+                        <a class="page-link" href="?page=${pageInfo.prePage}&size=${pageInfo.pageSize}">이전</a>
+                    </li>
+                </c:if>
+                <c:forEach begin="${pageInfo.navigateFirstPage}" end="${pageInfo.navigateLastPage}" var="pageNum">
+                    <li class="page-item ${pageNum == pageInfo.pageNum ? 'active' : ''}">
+                        <a class="page-link" href="?page=${pageNum}&size=${pageInfo.pageSize}">${pageNum}</a>
+                    </li>
+                </c:forEach>
+                <c:if test="${pageInfo.hasNextPage}">
+                    <li class="page-item">
+                        <a class="page-link" href="?page=${pageInfo.nextPage}&size=${pageInfo.pageSize}">다음</a>
+                    </li>
+                </c:if>
+            </ul>
+        </nav>
+
         <div style="text-align: right; margin-top: 20px;">
             <button class="btn btn-outline" onclick="location.href='/elecApproval'">← 대시보드로 돌아가기</button>
         </div>

@@ -32,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriUtils;
 
+import com.github.pagehelper.PageInfo;
 import com.flow.coretime.common.dto.ApiResponse;
 import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 import com.flow.coretime.elecApproval.enums.DocumentType;
@@ -154,6 +155,7 @@ public class ElecApprovalController {
                 return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
         }
 
+        // 전자결재 재 임시저장
         @ResponseBody
         @PostMapping("/documents-temp/{docId}")
         public ResponseEntity<ApiResponse<Void>> updateTempDocument(
@@ -360,42 +362,62 @@ public class ElecApprovalController {
 
         // 임시저장 리스트
         @GetMapping("/temp")
-        public String tempList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-                List<DocumentRespDto> list = elecApprovalService.findAllTemp(userDetails.getUsername());
-                model.addAttribute("docList", list);
+        public String tempList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "page", defaultValue = "1") int page,
+                        @RequestParam(value = "size", defaultValue = "15") int size) {
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalService.findAllTemp(userDetails.getUsername(), page,
+                                size);
+                model.addAttribute("docList", pageInfo.getList());
+                model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/tempList";
         }
 
-        // 나의 결재 대기 문서
+        // 결재 차례 문서
         @GetMapping("/my-turn")
-        public String myTurnList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-                List<DocumentRespDto> list = elecApprovalService.findAllMyTurn(userDetails.getUsername());
-                model.addAttribute("docList", list);
+        public String myTurnList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "page", defaultValue = "1") int page,
+                        @RequestParam(value = "size", defaultValue = "15") int size) {
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalService.findAllMyTurn(userDetails.getUsername(), page,
+                                size);
+                model.addAttribute("docList", pageInfo.getList());
+                model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/myTurnList";
         }
 
         // 진행중인 문서
         @GetMapping("/pending-or-progress")
-        public String pendingOrProgressList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-                List<DocumentRespDto> list = elecApprovalService.findAllPendingOrInProgress(userDetails.getUsername());
-                model.addAttribute("docList", list);
+        public String pendingOrProgressList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "page", defaultValue = "1") int page,
+                        @RequestParam(value = "size", defaultValue = "15") int size) {
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalService
+                                .findAllPendingOrInProgress(userDetails.getUsername(), page, size);
+                model.addAttribute("docList", pageInfo.getList());
+                model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/pendingOrProgressList";
         }
 
         // 반려 및 취소
         @GetMapping("/rejected-or-recalled")
-        public String rejectedOrRecalledList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-                List<DocumentRespDto> list = elecApprovalService
-                                .findAllRejectedOrRecalled(userDetails.getUsername());
-                model.addAttribute("docList", list);
+        public String rejectedOrRecalledList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "page", defaultValue = "1") int page,
+                        @RequestParam(value = "size", defaultValue = "15") int size) {
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalService
+                                .findAllRejectedOrRecalled(userDetails.getUsername(), page, size);
+                model.addAttribute("docList", pageInfo.getList());
+                model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/rejectedOrRecalledList";
         }
 
         // 완료 문서
         @GetMapping("/approved")
-        public String completedList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-                List<DocumentRespDto> list = elecApprovalService.findAllApproved(userDetails.getUsername());
-                model.addAttribute("docList", list);
+        public String completedList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "page", defaultValue = "1") int page,
+                        @RequestParam(value = "size", defaultValue = "15") int size) {
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalService.findAllApproved(userDetails.getUsername(),
+                                page,
+                                size);
+                model.addAttribute("docList", pageInfo.getList());
+                model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/approvedList";
         }
 

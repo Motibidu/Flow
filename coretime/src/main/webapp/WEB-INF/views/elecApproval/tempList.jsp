@@ -3,19 +3,19 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 
-<t:layout title="임시 저장함">
+<t:layout title="임시저장 문서">
     <link rel="stylesheet" href="/resources/css/list.css">
     <div class="main">
-        <h1>💾 임시 저장 문서</h1>
+        <h1>💾 임시저장 문서</h1>
         
         <div class="widget">
             <table class="data-table">
                 <colgroup>
-                    <col width="8%"> <col width="*"> <col width="15%"> <col width="15%"> <col width="10%">
+                    <col width="8%"> <col width="*"> <col width="15%"> <col width="15%">
                 </colgroup>
                 <thead>
                     <tr>
-                        <th>NO</th> <th>제목</th> <th>저장일</th> <th>양식</th> <th>상태</th>
+                        <th>NO</th> <th>제목</th> <th>작성일</th> <th>양식</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -25,20 +25,34 @@
                                 <tr>
                                     <td>${doc.docId}</td>
                                     <td style="text-align: left; padding-left: 15px;">
-                                        <a href="/elecApproval/redraft/${doc.docId}">${doc.title}</a>
+                                        <a href="/elecApproval/documents-temp/${doc.docId}">${doc.title}</a>
                                     </td>
                                     <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                     <td>${doc.docType.displayName}</td>
-                                    <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
                                 </tr>
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
-                            <tr><td colspan="5" class="no-data">임시 저장된 문서가 없습니다.</td></tr>
+                            <tr><td colspan="4" class="no-data">임시저장된 문 서가 없습니다.</td></tr>
                         </c:otherwise>
                     </c:choose>
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" style="margin-top: 20px;">
+                <ul class="pagination justify-content-center">
+                    <c:if test="${pageInfo.hasPreviousPage}">
+                        <li class="page-item"><a class="page-link" href="?page=${pageInfo.prePage}&size=${pageInfo.pageSize}">이전</a></li>
+                    </c:if>
+                    <c:forEach begin="${pageInfo.navigateFirstPage}" end="${pageInfo.navigateLastPage}" var="pageNum">
+                        <li class="page-item ${pageNum == pageInfo.pageNum ? 'active' : ''}"><a class="page-link" href="?page=${pageNum}&size=${pageInfo.pageSize}">${pageNum}</a></li>
+                    </c:forEach>
+                    <c:if test="${pageInfo.hasNextPage}">
+                        <li class="page-item"><a class="page-link" href="?page=${pageInfo.nextPage}&size=${pageInfo.pageSize}">다음</a></li>
+                    </c:if>
+                </ul>
+            </nav>
         </div>
         <div style="text-align: right; margin-top: 20px;">
             <button class="btn btn-outline" onclick="location.href='/elecApproval'">← 대시보드로 돌아가기</button>
