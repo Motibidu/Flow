@@ -28,7 +28,7 @@ import com.flow.coretime.elecApproval.enums.DocumentStatus;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
 import com.flow.coretime.elecApproval.model.AttachmentEntity;
-import com.flow.coretime.elecApproval.model.Document;
+import com.flow.coretime.elecApproval.model.DocumentRespDto;
 import com.flow.coretime.elecApproval.model.DocumentEntity;
 import com.flow.coretime.elecApproval.model.DocumentReqDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
@@ -64,32 +64,32 @@ public class ElecApprovalService {
         private final MyApprovalLineMapper myApprovalLineMapper;
 
         // 나의 결재 차례인 문서
-        public List<Document> getPendingApprovals(String currentUserId) {
+        public List<DocumentRespDto> getPendingApprovals(String currentUserId) {
                 return elecApprovalMapper.selectDocumentsToApprove(currentUserId);
         }
 
         // 내가 기안한 진행 중 문서
-        public List<Document> selectMyInProgressDocs(String currentUserId) {
+        public List<DocumentRespDto> selectMyInProgressDocs(String currentUserId) {
                 return elecApprovalMapper.selectInProgressDocumentsByInitiatorId(currentUserId);
         }
 
         // 반려 및 취소된 문서
-        public List<Document> selectRejectedOrRecalledDocs(String currentUserId) {
+        public List<DocumentRespDto> selectRejectedOrRecalledDocs(String currentUserId) {
                 return elecApprovalMapper.selectRejectedOrRecalledDocuments(currentUserId);
         }
 
         // 최종 승인된 문서
-        public List<Document> selectMyApprovedDocs(String currentUserId) {
+        public List<DocumentRespDto> selectMyApprovedDocs(String currentUserId) {
                 return elecApprovalMapper.selectApprovedDocumentsByInitiatorId(currentUserId);
         }
 
-        public void createDocument(Document document) {
+        public void createDocument(DocumentRespDto document) {
                 elecApprovalMapper.insertDocument(document);
         }
 
         // 전자결재 등록하기
         @Transactional
-        public void createDocumentAndInitialApproval(Document document, String loginId) {
+        public void createDocumentAndInitialApproval(DocumentRespDto document, String loginId) {
                 // 1. 기안자 정보 상세 조회
                 User initiator = userService.findById(loginId)
                                 .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
@@ -122,7 +122,7 @@ public class ElecApprovalService {
                 }
         }
 
-        public List<ElecApprovalHistory> createApprovalLineHistory(Document document) {
+        public List<ElecApprovalHistory> createApprovalLineHistory(DocumentRespDto document) {
                 // 1. 해당 문서 타입의 고정 결재선 가져오기
                 List<ElecApprovalLineConfigEntity> configs = elecApprovalLineConfigMapper
                                 .getApprovalConfigList(document.getDocType());
@@ -159,9 +159,14 @@ public class ElecApprovalService {
 
         }
 
-        public Document getDocumentById(int docId) {
-                return elecApprovalMapper.getDocumentById(docId)
+        public DocumentRespDto getDocumentById(int docId) {
+                DocumentRespDto documentRespDto = elecApprovalMapper.getDocumentById(docId)
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
+                List<AttachmentEntity> attachments = elecApprovalMapper.selectAttachmentsByDocId(docId);
+                documentRespDto.setAttachments(attachments);
+
+                return documentRespDto;
+
         }
 
         // 문서의 현재 PENDING 상태 결재자 ID 조회
@@ -181,7 +186,7 @@ public class ElecApprovalService {
         public void processApproval(int docId, String approverId, ApprovalStatus approvalStatus, String comment) {
 
                 // 1. 문서 조회
-                Document document = elecApprovalMapper.getDocumentById(docId)
+                DocumentRespDto document = elecApprovalMapper.getDocumentById(docId)
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
 
                 // 2. 현재 결재자 조회
@@ -264,8 +269,8 @@ public class ElecApprovalService {
         }
 
         @Transactional
-        public void redraftDocument(String userId, int docId, Document redraftDocument) {
-                Document document = getDocumentById(docId);
+        public void redraftDocument(String userId, int docId, DocumentRespDto redraftDocument) {
+                DocumentRespDto document = getDocumentById(docId);
 
                 // 1. 기안자의 부서 정보 가져오기
                 User initiator = userMapper.findById(userId)
@@ -300,7 +305,7 @@ public class ElecApprovalService {
         public void deleteDocument(int docId, String loginId) {
 
                 // 1. 문서 정보 조회
-                Document document = elecApprovalMapper.getDocumentById(docId)
+                DocumentRespDto document = elecApprovalMapper.getDocumentById(docId)
                                 .orElseThrow(() -> new RuntimeException("삭제할 문서를 찾을 수 없습니다."));
 
                 // 2. 권한 체크: 기안자 본인만 삭제 가능
@@ -404,7 +409,7 @@ public class ElecApprovalService {
         }
 
         @Transactional
-        public void createDocumentAndInitialApproval(DocumentReqDto request, List<MultipartFile> files,
+        public void saveDocumentAndInitialApproval(DocumentReqDto request, List<MultipartFile> files,
                         String loginId) {
                 // 1. 문서 엔티티 생성
                 DocumentEntity documentEntity = DocumentEntity.builder()
@@ -461,7 +466,7 @@ public class ElecApprovalService {
 
                         String originName = file.getOriginalFilename();
                         String savedName = UUID.randomUUID().toString() + "_" + originName;
-                        File dest = new File(dir, originName);
+                        File dest = new File(dir, savedName);
 
                         try {
                                 file.transferTo(dest);
@@ -478,5 +483,111 @@ public class ElecApprovalService {
                                 throw new RuntimeException("파일 업로드 중 오류 발생", e);
                         }
                 }
+        }
+
+        public AttachmentEntity getAttachment(Long fileId) {
+
+                return elecApprovalMapper.selectAttachmentByDocId(fileId)
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."));
+        }
+
+        // 임시저장
+        public void saveTempDocument(DocumentReqDto request, List<MultipartFile> files, String loginId) {
+                // 1. 문서 엔티티 생성
+                DocumentEntity documentEntity = DocumentEntity.builder()
+                                .docType(request.getDocType())
+                                .title(request.getTitle())
+                                .jsonContent(request.getJsonContent())
+                                .initiatorId(loginId)
+                                .status(DocumentStatus.TEMP)
+                                .draftDate(new Date())
+                                .updatedAt(new Date())
+                                .build();
+
+                // 2. 문서 저장
+                elecApprovalMapper.insertDocumentEntity(documentEntity);
+                int docId = documentEntity.getDocId();
+
+                // 3. 결재선 생성 및 저장
+                if (request.getApproverIds() != null && !request.getApproverIds().isEmpty()) {
+                        List<ElecApprovalHistoryEntity> histories = new ArrayList<>();
+                        List<String> approverIds = request.getApproverIds();
+
+                        for (int i = 0; i < approverIds.size(); i++) {
+                                histories.add(ElecApprovalHistoryEntity.builder()
+                                                .docId(docId)
+                                                .approverId(approverIds.get(i))
+                                                .approvalStatus(i == 0 ? ApprovalStatus.PENDING : ApprovalStatus.WAIT)
+                                                .approvalOrder(i + 1)
+                                                .build());
+                        }
+                        elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
+                }
+
+                // 4. 파일 저장
+                if (files != null && !files.isEmpty()) {
+                        saveFiles(docId, files);
+                }
+        }
+
+        // 임시저자장 업데이트
+        public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files, String loginId) {
+
+                // 1. 문서 엔티티 생성
+                DocumentEntity documentEntity = DocumentEntity.builder()
+                                .docId(docId)
+                                .docType(request.getDocType())
+                                .title(request.getTitle())
+                                .jsonContent(request.getJsonContent())
+                                .initiatorId(loginId)
+                                .status(DocumentStatus.TEMP)
+                                .draftDate(new Date())
+                                .updatedAt(new Date())
+                                .build();
+
+                // 2. 문서 저장
+                elecApprovalMapper.updateTempDocumentEntity(documentEntity);
+
+                // 3. 결재선 생성 및 저장
+                if (request.getApproverIds() != null && !request.getApproverIds().isEmpty()) {
+                        List<ElecApprovalHistoryEntity> histories = new ArrayList<>();
+                        List<String> approverIds = request.getApproverIds();
+
+                        for (int i = 0; i < approverIds.size(); i++) {
+                                histories.add(ElecApprovalHistoryEntity.builder()
+                                                .docId(docId)
+                                                .approverId(approverIds.get(i))
+                                                .approvalStatus(i == 0 ? ApprovalStatus.PENDING : ApprovalStatus.WAIT)
+                                                .approvalOrder(i + 1)
+                                                .build());
+                        }
+                        elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
+                }
+
+                // 4. 파일 저장
+                if (files != null && !files.isEmpty()) {
+                        saveFiles(docId, files);
+                }
+        }
+
+        public List<DocumentRespDto> findAllPendingOrInProgress(String username) {
+                return elecApprovalMapper.selectAllPendingOrInProgress(username);
+        }
+
+        public List<DocumentRespDto> findAllRejectedOrRecalled(String username) {
+                return elecApprovalMapper.selectAllRejectedOrRecalled(username);
+        }
+
+        public List<DocumentRespDto> findAllApproved(String username) {
+                return elecApprovalMapper.selectAllApproved(username);
+        }
+
+        public List<DocumentRespDto> findAllTemp(String username) {
+                return elecApprovalMapper.selectAllTemp(username);
+        }
+
+        public List<DocumentRespDto> findAllMyTurn(String username) {
+                return elecApprovalMapper.selectAllMyTurn(username);
+
         }
 }

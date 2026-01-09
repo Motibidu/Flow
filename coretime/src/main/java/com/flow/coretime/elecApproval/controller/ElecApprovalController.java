@@ -1,11 +1,18 @@
 package com.flow.coretime.elecApproval.controller;
 
-import java.util.ArrayList;
+import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriUtils;
 
 import com.flow.coretime.common.dto.ApiResponse;
 import com.flow.coretime.elecApproval.enums.ApprovalStatus;
@@ -31,11 +39,10 @@ import com.flow.coretime.elecApproval.mapper.ElecApprovalLineConfigMapper;
 import com.flow.coretime.elecApproval.model.ApprovalLineConfigRespDto;
 import com.flow.coretime.elecApproval.model.ApprovalReq;
 import com.flow.coretime.elecApproval.model.ApproverCandidateDto;
-import com.flow.coretime.elecApproval.model.Document;
+import com.flow.coretime.elecApproval.model.AttachmentEntity;
+import com.flow.coretime.elecApproval.model.DocumentRespDto;
 import com.flow.coretime.elecApproval.model.DocumentReqDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
-import com.flow.coretime.elecApproval.model.ElecApprovalLineConfigEntity;
-import com.flow.coretime.elecApproval.model.MyApprovalLineEntity;
 import com.flow.coretime.elecApproval.model.MyLineResponseDto;
 import com.flow.coretime.elecApproval.model.MyLineSaveDto;
 import com.flow.coretime.elecApproval.service.ElecApprovalService;
@@ -51,6 +58,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/elecApproval")
 public class ElecApprovalController {
 
+        @Value("${upload.dir}")
+        private String uploadDir;
+
         private final ElecApprovalLineConfigMapper elecApprovalLineConfigMapper;
         private final ElecApprovalService elecApprovalService;
         private final UserService userService;
@@ -59,17 +69,18 @@ public class ElecApprovalController {
         public String showElecApproval(@AuthenticationPrincipal UserDetails userDetails, Model model) {
                 String currentUserId = userDetails.getUsername();
 
-                List<Document> pendingApprovals = elecApprovalService.getPendingApprovals(currentUserId);
+                List<DocumentRespDto> pendingApprovals = elecApprovalService.getPendingApprovals(currentUserId);
                 model.addAttribute("pendingApprovals", pendingApprovals);
 
                 // 내가 기안한 진행 중 문서
-                List<Document> myInProgressDocs = elecApprovalService.selectMyInProgressDocs(currentUserId);
+                List<DocumentRespDto> myInProgressDocs = elecApprovalService.selectMyInProgressDocs(currentUserId);
                 model.addAttribute("myInProgressDocs", myInProgressDocs);
 
-                List<Document> rejectedOrRecalled = elecApprovalService.selectRejectedOrRecalledDocs(currentUserId);
+                List<DocumentRespDto> rejectedOrRecalled = elecApprovalService
+                                .selectRejectedOrRecalledDocs(currentUserId);
                 model.addAttribute("myRejectedOrRecalledDocs", rejectedOrRecalled);
 
-                List<Document> myApprovedDocs = elecApprovalService.selectMyApprovedDocs(currentUserId);
+                List<DocumentRespDto> myApprovedDocs = elecApprovalService.selectMyApprovedDocs(currentUserId);
                 model.addAttribute("myApprovedDocs", myApprovedDocs);
 
                 return "elecApproval/elecApproval";
@@ -92,14 +103,16 @@ public class ElecApprovalController {
 
                         return "elecApproval/vacationRequestForm";
                 } else if (DocumentType.EXPENSE_REPORT.toString().equals(formType)) {
-                        List<ElecApprovalLineConfigEntity> approvalLines = elecApprovalLineConfigMapper
-                                        .getApprovalConfigList(DocumentType.EXPENSE_REPORT);
+                        List<ApprovalLineConfigRespDto> approvalLines = elecApprovalLineConfigMapper
+                                        .getApprovalLineConfigRespDto(currentUser.getDepartment(),
+                                                        DocumentType.EXPENSE_REPORT);
                         model.addAttribute("approvalLines", approvalLines);
 
                         return "elecApproval/expenseReportForm";
                 } else if (DocumentType.GENERAL_PROPOSAL.toString().equals(formType)) {
-                        List<ElecApprovalLineConfigEntity> approvalLines = elecApprovalLineConfigMapper
-                                        .getApprovalConfigList(DocumentType.GENERAL_PROPOSAL);
+                        List<ApprovalLineConfigRespDto> approvalLines = elecApprovalLineConfigMapper
+                                        .getApprovalLineConfigRespDto(currentUser.getDepartment(),
+                                                        DocumentType.GENERAL_PROPOSAL);
                         model.addAttribute("approvalLines", approvalLines);
 
                         return "elecApproval/generalProposalForm";
@@ -109,19 +122,10 @@ public class ElecApprovalController {
 
         }
 
-        @GetMapping("/approver-candidates")
+        // 전자결재 기안
         @ResponseBody
-        public List<ApproverCandidateDto> getAllApproverCandidates() {
-                List<ApproverCandidateDto> approverCandidates = userService.getAllApproverCandidates();
-                log.info("approverCandidates: {}", approverCandidates);
-
-                return approverCandidates;
-
-        }
-
         @PostMapping("/documents")
-        @ResponseBody
-        public ResponseEntity<ApiResponse<Void>> createDocument(
+        public ResponseEntity<ApiResponse<Void>> saveDocument(
                         @ModelAttribute DocumentReqDto request,
                         @RequestParam(value = "files", required = false) List<MultipartFile> files,
                         @AuthenticationPrincipal UserDetails userDetails) {
@@ -129,7 +133,40 @@ public class ElecApprovalController {
                 log.info("request: {}", request);
                 log.info("files: {}", files != null ? files.size() : 0);
 
-                elecApprovalService.createDocumentAndInitialApproval(request, files, userDetails.getUsername());
+                elecApprovalService.saveDocumentAndInitialApproval(request, files, userDetails.getUsername());
+
+                return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
+        }
+
+        // 전자결재 임시저장
+        @ResponseBody
+        @PostMapping("/documents-temp")
+        public ResponseEntity<ApiResponse<Void>> saveTempDocument(
+                        @ModelAttribute DocumentReqDto request,
+                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+
+                log.info("request: {}", request);
+                log.info("files: {}", files != null ? files.size() : 0);
+
+                elecApprovalService.saveTempDocument(request, files, userDetails.getUsername());
+
+                return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
+        }
+
+        @ResponseBody
+        @PostMapping("/documents-temp/{docId}")
+        public ResponseEntity<ApiResponse<Void>> updateTempDocument(
+                        @ModelAttribute DocumentReqDto request,
+                        @PathVariable("docId") int docId,
+                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+
+                log.info("request: {}", request);
+                log.info("files: {}", files != null ? files.size() : 0);
+                log.info("docId: {}", docId);
+
+                elecApprovalService.updateTempDocument(docId, request, files, userDetails.getUsername());
 
                 return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
         }
@@ -138,7 +175,7 @@ public class ElecApprovalController {
         public String detailElecApproval(@PathVariable("docId") int docId,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
 
-                Document document = elecApprovalService.getDocumentById(docId);
+                DocumentRespDto document = elecApprovalService.getDocumentById(docId);
                 model.addAttribute("document", document);
 
                 List<ElecApprovalHistory> approvalHistories = elecApprovalService
@@ -176,7 +213,7 @@ public class ElecApprovalController {
 
         @GetMapping("/redraft/{docId}")
         public String showEditForm(@PathVariable("docId") int docId, Model model) {
-                Document document = elecApprovalService.getDocumentById(docId);
+                DocumentRespDto document = elecApprovalService.getDocumentById(docId);
                 log.info("document: {}", document);
                 model.addAttribute("document", document);
 
@@ -195,7 +232,7 @@ public class ElecApprovalController {
         @ResponseBody
         @PostMapping("/redraft/{docId}")
         public String redraftDocument(@PathVariable("docId") int docId,
-                        @RequestBody Document redraftData,
+                        @RequestBody DocumentRespDto redraftData,
                         @AuthenticationPrincipal UserDetails userDetails) {
                 log.info("redraftData: {}", redraftData);
                 String userId = userDetails.getUsername();
@@ -204,8 +241,9 @@ public class ElecApprovalController {
                 return "redirect:/elecApproval/detail/" + docId;
         }
 
-        @PostMapping("/approval/{docId}")
+        // 승인
         @ResponseBody
+        @PostMapping("/approval/{docId}")
         public ResponseEntity<Map<String, String>> approveOrRejectDocument(
                         @PathVariable("docId") int docId,
                         @RequestBody ApprovalReq approvalReq,
@@ -286,6 +324,79 @@ public class ElecApprovalController {
                 String userId = userDetails.getUsername();
                 elecApprovalService.deleteMyApprovalLine(userId, lineId);
                 return ResponseEntity.ok(ApiResponse.success("성공적으로 삭제되었습니다."));
+        }
+
+        // 결재선 지정 리스트
+        @ResponseBody
+        @GetMapping("/approver-candidates")
+        public List<ApproverCandidateDto> getAllApproverCandidates() {
+                // log.info("approverCandidates: {}", approverCandidates);
+                List<ApproverCandidateDto> approverCandidates = userService.getAllApproverCandidates();
+
+                return approverCandidates;
+        }
+
+        // 첨부파일 다운로드
+        @GetMapping("/download/{fileId}")
+        public ResponseEntity<Resource> downloadFile(@PathVariable(name = "fileId") Long fileId)
+                        throws MalformedURLException {
+                AttachmentEntity fileInfo = elecApprovalService.getAttachment(fileId);
+
+                // 2. 실제 파일이 저장된 경로 찾기
+                Path filePath = Paths.get(uploadDir + "/" + fileInfo.getSavedName());
+
+                // 3. 리소스 생성
+                Resource resource = new UrlResource(filePath.toUri());
+
+                // 4. 한글 파일명 깨짐 방지 처리 (필수 ★)
+                String encodedUploadFileName = UriUtils.encode(fileInfo.getOriginName(), StandardCharsets.UTF_8);
+                String contentDisposition = "attachment; filename=\"" + encodedUploadFileName + "\"";
+
+                // 5. 다운로드 응답 반환
+                return ResponseEntity.ok()
+                                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                                .body(resource);
+        }
+
+        // 임시저장 리스트
+        @GetMapping("/temp")
+        public String tempList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+                List<DocumentRespDto> list = elecApprovalService.findAllTemp(userDetails.getUsername());
+                model.addAttribute("docList", list);
+                return "elecApproval/tempList";
+        }
+
+        // 나의 결재 대기 문서
+        @GetMapping("/my-turn")
+        public String myTurnList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+                List<DocumentRespDto> list = elecApprovalService.findAllMyTurn(userDetails.getUsername());
+                model.addAttribute("docList", list);
+                return "elecApproval/myTurnList";
+        }
+
+        // 진행중인 문서
+        @GetMapping("/pending-or-progress")
+        public String pendingOrProgressList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+                List<DocumentRespDto> list = elecApprovalService.findAllPendingOrInProgress(userDetails.getUsername());
+                model.addAttribute("docList", list);
+                return "elecApproval/pendingOrProgressList";
+        }
+
+        // 반려 및 취소
+        @GetMapping("/rejected-or-recalled")
+        public String rejectedOrRecalledList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+                List<DocumentRespDto> list = elecApprovalService
+                                .findAllRejectedOrRecalled(userDetails.getUsername());
+                model.addAttribute("docList", list);
+                return "elecApproval/rejectedOrRecalledList";
+        }
+
+        // 완료 문서
+        @GetMapping("/approved")
+        public String completedList(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+                List<DocumentRespDto> list = elecApprovalService.findAllApproved(userDetails.getUsername());
+                model.addAttribute("docList", list);
+                return "elecApproval/approvedList";
         }
 
 }

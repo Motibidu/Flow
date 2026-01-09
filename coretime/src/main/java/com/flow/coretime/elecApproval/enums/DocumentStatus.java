@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum DocumentStatus {
-        DRAFT("임시저장"),
+        TEMP("임시저장"),
         PENDING("결재대기"), // 첫 번째 결재자 대기
         IN_PROGRESS("결재중"), // 일부 승인 완료
         APPROVED("최종승인"), // 모든 결재자 승인 완료

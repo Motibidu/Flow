@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalMapper">
-    <resultMap id="documentResultMap" type="com.flow.coretime.elecApproval.model.Document" >
+    <resultMap id="documentResultMap" type="com.flow.coretime.elecApproval.model.DocumentRespDto" >
         <id property="docId" column="doc_id"/>
         <result property="docType" column="doc_type"/>
         <result property="title" column="title"/>
@@ -40,7 +40,7 @@
         WHERE doc_id= #{docId}
     </select>
 
-    <insert id="insertDocument" parameterType="com.flow.coretime.elecApproval.model.Document" 
+    <insert id="insertDocument" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto" 
         useGeneratedKeys="true" keyProperty="docId">
         INSERT INTO documents (
             doc_type,
@@ -86,7 +86,7 @@
     
 
 
-    <update id="updateDocumentStatus" parameterType="com.flow.coretime.elecApproval.model.Document">
+    <update id="updateDocumentStatus" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
         UPDATE documents
         SET
             status = #{status, jdbcType=VARCHAR},
@@ -182,7 +182,7 @@
         d.draft_date DESC
     </select>
 
-    <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.Document">
+    <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
         UPDATE documents
         SET
             title = #{title},
@@ -192,6 +192,19 @@
         WHERE
             doc_id = #{docId}
             AND status IN ('REJECTED', 'RECALLED')
+    </update>
+
+    <update id="updateTempDocumentEntity" parameterType="com.flow.coretime.elecApproval.model.DocumentEntity">
+        UPDATE documents
+        SET
+            title = #{title},
+            json_content = #{jsonContent},
+            status = 'PENDING',
+            updated_at = NOW()
+        WHERE
+            doc_id = #{docId}
+            AND status IN ('REJECTED', 'RECALLED')
+
     </update>
 
     <select id="getDocumentDetail" resultMap="documentResultMap">
@@ -254,4 +267,136 @@
             #{fileSize}
         )
     </insert>
+
+
+    <select id="selectAttachmentsByDocId" resultType="com.flow.coretime.elecApproval.model.AttachmentEntity">
+        SELECT
+            *
+        FROM
+            attachment
+        WHERE
+            doc_id= #{docId}
+    </select>
+
+    <select id="selectAttachmentByDocId" resultType="com.flow.coretime.elecApproval.model.AttachmentEntity">
+        SELECT
+            *
+        FROM
+            attachment
+        WHERE
+            doc_id= #{docId}
+    </select>
+
+    <select id="selectAllPendingOrInProgress" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT 
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM 
+            documents d
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE 
+            d.status IN ('PENDING', 'IN_PROGRESS')
+    </select>
+
+    <select id="selectAllRejectedOrRecalled" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT 
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM 
+            documents d
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE 
+            d.status IN ('REJECTED', 'RECALLED')
+    </select>
+
+    <select id="selectAllApproved" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT 
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM 
+            documents d
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE 
+            d.status IN ('APPROVED')
+    </select>
+
+    <select id="selectAllTemp" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT 
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM 
+            documents d
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE 
+            d.status IN ('TEMP')
+    </select>
+
+    <select id="selectAllMyTurn" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT 
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM 
+            documents d
+        JOIN
+            approval_history ah ON d.doc_id = ah.doc_id
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE 
+            ah.approver_id = #{userId}
+            AND ah.approval_status = 'PENDING'
+    </select>
 </mapper>

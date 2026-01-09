@@ -8,33 +8,34 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.flow.coretime.elecApproval.model.AttachmentEntity;
-import com.flow.coretime.elecApproval.model.Document;
+import com.flow.coretime.elecApproval.model.DocumentRespDto;
+import com.flow.coretime.users.model.User;
 import com.flow.coretime.elecApproval.model.DocumentEntity;
 
 @Mapper
 public interface ElecApprovalMapper {
         // select
-        List<Document> selectDocumentsToApprove(@Param("approverId") String approverId);
+        List<DocumentRespDto> selectDocumentsToApprove(@Param("approverId") String approverId);
 
-        List<Document> selectInProgressDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
+        List<DocumentRespDto> selectInProgressDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
 
-        List<Document> selectRejectedOrRecalledDocuments(String currentUserId);
+        List<DocumentRespDto> selectRejectedOrRecalledDocuments(String currentUserId);
 
-        List<Document> selectApprovedDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
+        List<DocumentRespDto> selectApprovedDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
 
-        Optional<Document> getDocumentById(@Param("docId") int docId);
+        Optional<DocumentRespDto> getDocumentById(@Param("docId") int docId);
 
         // insert
-        void insertDocument(Document document);
+        void insertDocument(DocumentRespDto document);
 
         void insertDocumentEntity(DocumentEntity documentEntity);
 
         void insertAttachment(AttachmentEntity attachment);
 
         // update
-        void updateDocumentStatus(Document document);
+        void updateDocumentStatus(DocumentRespDto document);
 
-        int updateDocumentForRedraft(Document redraftData);
+        int updateDocumentForRedraft(DocumentRespDto redraftData);
 
         // delete
         void deleteDocument(int docId);
@@ -43,5 +44,21 @@ public interface ElecApprovalMapper {
 
         // etc
         int cancelApproval(Map<String, Object> params);
+
+        List<AttachmentEntity> selectAttachmentsByDocId(@Param("docId") int docId);
+
+        Optional<AttachmentEntity> selectAttachmentByDocId(Long fileId);
+
+        List<DocumentRespDto> selectAllPendingOrInProgress(String username);
+
+        List<DocumentRespDto> selectAllRejectedOrRecalled(String username);
+
+        List<DocumentRespDto> selectAllApproved(String username);
+
+        List<DocumentRespDto> selectAllTemp(String username);
+
+        void updateTempDocumentEntity(DocumentEntity documentEntity);
+
+        List<DocumentRespDto> selectAllMyTurn(String username);
 
 }

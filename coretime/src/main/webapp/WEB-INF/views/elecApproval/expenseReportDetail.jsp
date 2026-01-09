@@ -94,6 +94,34 @@
                     <th>문서제목</th>
                     <td colspan="3" style="font-weight: bold; font-size: 16px;">${document.title}</td>
                 </tr>
+                <tr>
+                    <th>첨부파일</th>
+                    <td colspan="3">
+                        <c:choose>
+                            <c:when test="${empty document.attachments}">
+                                <span style="color: #999; font-size: 13px;">첨부된 파일이 없습니다.</span>
+                            </c:when>
+                            <c:otherwise>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <c:forEach items="${document.attachments}" var="file">
+                                        <div style="display: flex; align-items: center;">
+                                            <span style="margin-right: 6px;">📎</span>
+                                            <a href="/elecApproval/download/${file.docId}" 
+                                               style="color: #007bff; text-decoration: none; font-size: 14px;"
+                                               onmouseover="this.style.textDecoration='underline'" 
+                                               onmouseout="this.style.textDecoration='none'">
+                                                ${file.originName}
+                                            </a>
+                                            <span style="color: #888; font-size: 12px; margin-left: 8px;">
+                                                (<fmt:formatNumber value="${file.fileSize / 1024}" pattern="#,###"/> KB)
+                                            </span>
+                                        </div>
+                                    </c:forEach>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
+                    </td>
+                </tr>
             </table>
 
             <div style="margin-top: 30px;">

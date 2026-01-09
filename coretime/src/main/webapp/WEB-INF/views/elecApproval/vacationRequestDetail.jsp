@@ -7,7 +7,7 @@
     <jsp:body>
 
         <%-- 1. Load Common CSS --%>
-        <link rel="stylesheet" href="/resources/css/approval.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/approval.css">
 
         <%-- 2. Page-Specific Styles --%>
         <style>
@@ -18,13 +18,13 @@
 
             /* [Status Badges & Stamps] */
             .stamp-status { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
-            .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #fff; }
+            .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
             .status-APPROVED { background-color: #28a745; }
             .status-REJECTED { background-color: #dc3545; }
             .status-PENDING { background-color: #ffc107; color: #212529; }
             .status-RECALLED { background-color: #6c757d; }
 
-            /* [Button Overrides if needed] */
+            /* [Button Overrides] */
             .btn-primary { background: #007bff; color: white; border: none; }
             .btn-danger { background: #dc3545; color: white; border: none; }
             .btn-warning { background: #ffc107; color: #212529; border: none; }
@@ -66,7 +66,7 @@
             <table class="info-table">
                 <tr>
                     <th>문서상태</th>
-                    <td><span class="status-badge status-${document.status}">${document.status}</span></td>
+                    <td><span class="status-badge status-${document.status}">${document.status.displayName}</span></td>
                     <th>문서번호</th>
                     <td>${document.docId}</td>
                 </tr>
@@ -98,6 +98,35 @@
                     <th>비상 연락처</th>
                     <td colspan="3" id="jsonContactInfo"></td>
                 </tr>
+                
+                <tr>
+                    <th>첨부파일</th>
+                    <td colspan="3">
+                        <c:choose>
+                            <c:when test="${empty document.attachments}">
+                                <span style="color: #999; font-size: 13px;">첨부된 파일이 없습니다.</span>
+                            </c:when>
+                            <c:otherwise>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <c:forEach items="${document.attachments}" var="file">
+                                        <div style="display: flex; align-items: center;">
+                                            <span style="margin-right: 6px;">📎</span>
+                                            <a href="/elecApproval/download/${file.docId}" 
+                                               style="color: #007bff; text-decoration: none; font-size: 14px;"
+                                               onmouseover="this.style.textDecoration='underline'" 
+                                               onmouseout="this.style.textDecoration='none'">
+                                                ${file.originName}
+                                            </a>
+                                            <span style="color: #888; font-size: 12px; margin-left: 8px;">
+                                                (<fmt:formatNumber value="${file.fileSize / 1024}" pattern="#,###"/> KB)
+                                            </span>
+                                        </div>
+                                    </c:forEach>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
+                    </td>
+                </tr>
             </table>
 
             <c:if test="${currentUser.id eq currentApproverId and (document.status eq 'PENDING' or document.status eq 'IN_PROGRESS')}">
@@ -112,7 +141,11 @@
             </c:if>
 
             <div class="btn-group">
-                <button type="button" class="btn btn-outline" onclick="location.href='/elecApproval'">목록으로</button>
+                <button type="button" class="btn btn-outline" onclick="location.href='/elecApproval'">목록으로</button>.
+
+                <c:if test="${currentUser.id eq document.initiatorId and document.status eq 'TEMP'}">
+                    <button class="btn btn-danger" onclick="recallDocument(${document.docId})">상신 취소</button>
+                </c:if>
 
                 <c:if test="${currentUser.id eq document.initiatorId and document.status eq 'PENDING'}">
                     <button class="btn btn-danger" onclick="recallDocument(${document.docId})">상신 취소</button>
@@ -143,7 +176,7 @@
                 }
             });
 
-            // Common functions
+            // 결재 승인/반려
             function submitApproval(action) {
                 const comment = document.getElementById('approvalComment').value;
                 if (action === 'REJECTED' && !comment.trim()) { alert('반려 사유 입력 필수'); return; }
@@ -154,14 +187,17 @@
                     .catch(err => alert("오류 발생"));
             }
             
+            // 상신 취소
             function recallDocument(docId) { 
                 if(confirm("상신 취소하시겠습니까?")) {
                     axios.post("/elecApproval/recall/" + docId).then(res => { alert(res.data.message); location.href = '/elecApproval'; }); 
                 }
             }
             
+            // 재기안
             function redraftDocument(docId) { location.href = "/elecApproval/redraft/" + docId; }
             
+            // 삭제
             function deleteDocument(docId) { 
                 if(confirm("영구 삭제하시겠습니까?")) {
                     axios.delete("/elecApproval/delete/" + docId).then(res => { alert(res.data.message); location.href = '/elecApproval'; }); 

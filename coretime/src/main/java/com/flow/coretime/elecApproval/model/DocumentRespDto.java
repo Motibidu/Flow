@@ -1,6 +1,7 @@
 package com.flow.coretime.elecApproval.model;
 
 import java.util.Date;
+import java.util.List;
 
 import com.flow.coretime.common.enums.DepartmentType;
 import com.flow.coretime.common.enums.RankType;
@@ -10,7 +11,7 @@ import com.flow.coretime.elecApproval.enums.DocumentType;
 import lombok.Data;
 
 @Data
-public class Document {
+public class DocumentRespDto {
         // 테이블 컬럼
         private int docId;
 
@@ -32,6 +33,9 @@ public class Document {
 
         // JOIN테이블: APPROVAL_HISTORY
         private String currentApproverName;
+
+        
+        private List<AttachmentEntity> attachments;
 
         public String getInitiatorDepartmentName() {
                 return initiatorDepartment != null ? initiatorDepartment.getDisplayName() : "";

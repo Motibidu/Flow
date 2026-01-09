@@ -50,10 +50,13 @@
         .org-table th { padding: 12px 10px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: bold; }
         .user-item-row td { padding: 15px 10px; font-size: 14px; }
         .user-item-row:hover { background-color: #f1f8ff; }
+        
+        .btn-temp-save { background: #6c757d; color: white; border: none; }
+        .btn-temp-save:hover { background: #5a6268; }
     </style>
 
     <div class="approval-container">
-        <div class="doc-title">${empty document ? '휴 가 신 청 서' : '휴 가 신 청 서 (재기안)'}</div>
+        <div class="doc-title">${(empty document or document.status eq 'TEMP') ? '휴 가 신 청 서' : '휴 가 신 청 서 (재기안)'}</div>
 
         <div class="approval-actions">
             <button type="button" class="btn-line-select" style="background: #17a2b8;" onclick="openMyLineModal()">📂 불러오기</button>
@@ -136,16 +139,16 @@
                     </tr>
                 </table>
             </div>
-
             <input type="hidden" id="jsonContent" name="jsonContent">
             <input type="hidden" id="oldJsonData" value='<c:out value="${document.jsonContent}" escapeXml="false"/>'>
 
             <div class="btn-group">
                 <button type="button" class="btn btn-cancel" onclick="history.back()">취소</button>
+                <button type="button" class="btn btn-temp-save" onclick="saveTemp()">임시저장</button>
                 <c:if test="${not empty document.docId and document.status eq 'PENDING'}">
                     <button type="button" class="btn btn-recall" onclick="recallDocument(${document.docId})">상신 취소</button>
                 </c:if>
-                <button type="submit" class="btn btn-submit">${empty document ? '결재 상신' : '재상신'}</button>
+                <button type="submit" class="btn btn-submit">${(empty document or document.status eq 'TEMP') ? '결재 상신' : '재상신'}</button>
             </div>
         </form>
     </div>
@@ -213,6 +216,7 @@
     let allOrgUsers = [];
 
     document.addEventListener('DOMContentLoaded', function() {
+
         // A. 기존 폼 데이터 로드
         const oldJson = document.getElementById('oldJsonData').value;
         if (oldJson && oldJson.trim() !== "") {
@@ -487,6 +491,42 @@
     // -------------------------------------------------------------
     // [기능 4] 최종 상신
     // -------------------------------------------------------------
+    
+    // 임시저장
+    function saveTemp() {
+        if(!confirm("작성 중인 내용을 임시저장 하시겠습니까?")) return;
+
+        const vacationDetail = {
+            vacationType: document.getElementById('vacationType').value,
+            startDate: document.getElementById('startDate').value,
+            endDate: document.getElementById('endDate').value,
+            reason: document.getElementById('reason').value,
+            contactInfo: document.getElementById('contactInfo').value
+        };
+        const jsonContentStr = JSON.stringify(vacationDetail);
+
+        const formData = new FormData();
+        formData.append('title', document.getElementById('title').value);
+        formData.append('docType', 'VACATION_REQUEST');
+        formData.append('jsonContent', jsonContentStr);
+        
+        // 결재선이 지정되어 있다면 함께 저장 (선택사항)
+        selectedApprovers.map(u => u.id).forEach(id => formData.append('approverIds', id));
+
+        const fileInput = document.getElementById('attachments');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
+        }
+
+
+        const docId = '${document.docId}';
+        const url = '/elecApproval/documents-temp/'+ docId;
+
+        axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+            .then(res => { alert("임시저장 되었습니다."); location.href = "/elecApproval/temp"; })
+            .catch(err => { console.error(err); alert("임시저장 중 오류가 발생했습니다."); });
+    }
+
     document.getElementById('vacationForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
