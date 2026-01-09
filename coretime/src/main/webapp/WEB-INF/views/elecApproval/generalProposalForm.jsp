@@ -347,7 +347,7 @@
 
                 // 3. 전송
                 const docId = '${document.docId}';
-                const url = docId ? '/elecApproval/redraft/' + docId : '/elecApproval/documents';
+                const url = docId ? '/elecApproval/documents/' + docId : '/elecApproval/documents';
 
                 axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
                     .then(() => { alert("완료되었습니다."); location.href = "/elecApproval"; })

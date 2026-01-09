@@ -164,8 +164,12 @@ public class ElecApprovalService {
         public DocumentRespDto getDocumentById(int docId) {
                 DocumentRespDto documentRespDto = elecApprovalMapper.getDocumentById(docId)
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
+
                 List<AttachmentEntity> attachments = elecApprovalMapper.selectAttachmentsByDocId(docId);
                 documentRespDto.setAttachments(attachments);
+
+                List<ElecApprovalHistory> histories = elecApprovalHistoryMapper.findApprovalHistoryByDocId(docId);
+                documentRespDto.setApprovalHistories(histories);
 
                 return documentRespDto;
 
@@ -323,7 +327,19 @@ public class ElecApprovalService {
                 // 4. 연관 데이터 삭제: 결재 이력(History)을 먼저 삭제해야 외래키 오류가 발생하지 않음
                 elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
 
-                // 5. 문서 삭제
+                // 5. 첨부파일 삭제
+                List<AttachmentEntity> attachments = elecApprovalMapper.selectAttachmentsByDocId(docId);
+                if (attachments != null && !attachments.isEmpty()) {
+                        for (AttachmentEntity attachment : attachments) {
+                                File file = new File(attachment.getFilePath());
+                                if (file.exists()) {
+                                        file.delete();
+                                }
+                        }
+                        elecApprovalMapper.deleteAttachmentsByDocId(docId);
+                }
+
+                // 6. 문서 삭제
                 elecApprovalMapper.deleteDocument(docId);
 
                 log.info("문서 및 결재선 삭제 완료 - 문서ID: {}, 실행자: {}", docId, loginId);
@@ -532,7 +548,7 @@ public class ElecApprovalService {
                 }
         }
 
-        // 임시저자장 업데이트
+        // 임시저장 업데이트
         public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files, String loginId) {
 
                 // 1. 문서 엔티티 생성
@@ -603,5 +619,15 @@ public class ElecApprovalService {
                 PageHelper.startPage(page, size);
                 List<DocumentRespDto> list = elecApprovalMapper.selectAllMyTurn(username);
                 return new PageInfo<>(list);
+        }
+
+        public DocumentRespDto getDocumentById(int docId, String username, boolean isAdmin) {
+                DocumentRespDto documentRespDto = elecApprovalMapper.getDocumentById(docId)
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
+
+                List<AttachmentEntity> attachments = elecApprovalMapper.selectAttachmentsByDocId(docId);
+                documentRespDto.setAttachments(attachments);
+
+                return documentRespDto;
         }
 }

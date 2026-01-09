@@ -131,7 +131,7 @@
                                         <td>${doc.docType.displayName}</td>
                                         <td>${doc.initiatorName}</td>
                                         <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd"/></td>
-                                        <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                                        <td><span class="status-badge status-${doc.status}">${doc.status.displayName}</span></td>
                                         <td><button class="btn btn-secondary" onclick="quickApprove(${doc.docId})">승인</button></td>
                                     </tr>
                                 </c:forEach>
@@ -167,7 +167,7 @@
                                         </td>
                                         <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                         <td>${doc.docType.displayName}</td>
-                                        <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                                        <td><span class="status-badge status-${doc.status}">${doc.status.displayName}</span></td>
                                     </tr>
                                 </c:forEach>
                             </tbody>

@@ -61,4 +61,6 @@ public interface ElecApprovalMapper {
 
         List<DocumentRespDto> selectAllMyTurn(String username);
 
+        void deleteAttachmentsByDocId(int docId);
+
 }

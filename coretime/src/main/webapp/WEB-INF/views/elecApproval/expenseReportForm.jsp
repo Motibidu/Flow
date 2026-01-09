@@ -401,7 +401,7 @@
                 for(let i=0; i<files.length; i++) formData.append('files', files[i]);
 
                 const docId = '${document.docId}';
-                const url = docId ? '/elecApproval/redraft/' + docId : '/elecApproval/documents';
+                const url = docId ? '/elecApproval/documents/' + docId : '/elecApproval/documents';
                 axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
                      .then(() => { alert("완료되었습니다."); location.href = "/elecApproval"; })
                      .catch(err => { console.error(err); alert("오류 발생"); });

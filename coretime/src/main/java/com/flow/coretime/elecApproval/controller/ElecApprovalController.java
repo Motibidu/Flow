@@ -87,7 +87,8 @@ public class ElecApprovalController {
                 return "elecApproval/elecApproval";
         }
 
-        @GetMapping("/new")
+        // 전자결재 작성 페이지
+        @GetMapping("/documents")
         public String showElecApprovalNew(@RequestParam("formType") String formType,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
                 User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
@@ -123,7 +124,7 @@ public class ElecApprovalController {
 
         }
 
-        // 전자결재 기안
+        // 전자결재 제출
         @ResponseBody
         @PostMapping("/documents")
         public ResponseEntity<ApiResponse<Void>> saveDocument(
@@ -139,9 +140,41 @@ public class ElecApprovalController {
                 return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
         }
 
+        // 전자결재 임시저장/재상신 페이지
+        @GetMapping("/documents/{docId}")
+        public String showEditForm(@PathVariable("docId") int docId, Model model) {
+                DocumentRespDto document = elecApprovalService.getDocumentById(docId);
+                log.info("document: {}", document);
+                model.addAttribute("document", document);
+
+                DocumentType documentType = document.getDocType();
+                if (DocumentType.VACATION_REQUEST.equals(documentType)) {
+                        return "elecApproval/vacationRequestForm";
+                } else if (DocumentType.EXPENSE_REPORT.equals(documentType)) {
+                        return "elecApproval/expenseReportForm";
+                } else if (DocumentType.GENERAL_PROPOSAL.equals(documentType)) {
+                        return "elecApproval/generalProposalForm";
+                }
+
+                return "elecApproval/vacationEditForm";
+        }
+
+        // 전자결재 재작성 제출
+        @ResponseBody
+        @PostMapping("/documents/{docId}")
+        public ResponseEntity<ApiResponse<String>> redraftDocument(@PathVariable("docId") int docId,
+                        @RequestBody DocumentRespDto redraftData,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                log.info("redraftData: {}", redraftData);
+                String userId = userDetails.getUsername();
+                elecApprovalService.redraftDocument(userId, docId, redraftData);
+
+                return ResponseEntity.ok(ApiResponse.success("/elecApproval/detail/" + docId));
+        }
+
         // 전자결재 임시저장
         @ResponseBody
-        @PostMapping("/documents-temp")
+        @PostMapping("/documents/temp")
         public ResponseEntity<ApiResponse<Void>> saveTempDocument(
                         @ModelAttribute DocumentReqDto request,
                         @RequestParam(value = "files", required = false) List<MultipartFile> files,
@@ -157,7 +190,7 @@ public class ElecApprovalController {
 
         // 전자결재 재 임시저장
         @ResponseBody
-        @PostMapping("/documents-temp/{docId}")
+        @PostMapping("/documents/temp/{docId}")
         public ResponseEntity<ApiResponse<Void>> updateTempDocument(
                         @ModelAttribute DocumentReqDto request,
                         @PathVariable("docId") int docId,
@@ -180,27 +213,13 @@ public class ElecApprovalController {
                 DocumentRespDto document = elecApprovalService.getDocumentById(docId);
                 model.addAttribute("document", document);
 
-                List<ElecApprovalHistory> approvalHistories = elecApprovalService
-                                .getApprovalHistoriesForDocument(docId);
-                model.addAttribute("approvalHistories", approvalHistories);
-
-                // 결재할 차례의 사람이면 승인/반려 버튼 활성화
-                String currentApproverId = approvalHistories.stream()
-                                .filter(h -> ApprovalStatus.PENDING.equals(h.getApprovalStatus()))
-                                .findFirst()
-                                .map(ElecApprovalHistory::getApproverId)
-                                .orElse(null);
-                model.addAttribute("currentApproverId", currentApproverId);
-
                 // 기안자 본인이면 상신취소 또는 재기안 버튼 활성화
                 User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
                                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
                 model.addAttribute("currentUser", currentUser);
 
-                // log.info("document: {}", document);
-                // log.info("approvalHistories: {}", approvalHistories);
-                // log.info("currentApproverId: {}", currentApproverId);
-                // log.info("currentUser: {}", currentUser);
+                log.info("document: {}", document);
+                log.info("currentUser: {}", currentUser);
 
                 if (DocumentType.VACATION_REQUEST.equals(document.getDocType())) {
                         return "elecApproval/vacationRequestDetail";
@@ -213,40 +232,10 @@ public class ElecApprovalController {
                 return "vacationRequestDetail";
         }
 
-        @GetMapping("/redraft/{docId}")
-        public String showEditForm(@PathVariable("docId") int docId, Model model) {
-                DocumentRespDto document = elecApprovalService.getDocumentById(docId);
-                log.info("document: {}", document);
-                model.addAttribute("document", document);
-
-                DocumentType documentType = document.getDocType();
-                if (DocumentType.VACATION_REQUEST.equals(documentType)) {
-                        return "elecApproval/vacationRequestForm";
-                } else if (DocumentType.EXPENSE_REPORT.equals(documentType)) {
-                        return "elecApproval/expenseReportForm";
-                } else if (DocumentType.GENERAL_PROPOSAL.equals(documentType)) {
-                        return "elecApproval/generalProposalForm";
-                }
-
-                return "elecApproval/vacationEditForm";
-        }
-
-        @ResponseBody
-        @PostMapping("/redraft/{docId}")
-        public String redraftDocument(@PathVariable("docId") int docId,
-                        @RequestBody DocumentRespDto redraftData,
-                        @AuthenticationPrincipal UserDetails userDetails) {
-                log.info("redraftData: {}", redraftData);
-                String userId = userDetails.getUsername();
-                elecApprovalService.redraftDocument(userId, docId, redraftData);
-
-                return "redirect:/elecApproval/detail/" + docId;
-        }
-
         // 승인
         @ResponseBody
         @PostMapping("/approval/{docId}")
-        public ResponseEntity<Map<String, String>> approveOrRejectDocument(
+        public ResponseEntity<ApiResponse<Void>> approveOrRejectDocument(
                         @PathVariable("docId") int docId,
                         @RequestBody ApprovalReq approvalReq,
                         @AuthenticationPrincipal UserDetails userDetails) {
@@ -262,37 +251,24 @@ public class ElecApprovalController {
 
                 // 3. 성공 응답만 리턴
                 String successMessage = (approvalStatus == ApprovalStatus.APPROVED) ? "결재가 승인되었습니다." : "결재가 반려되었습니다.";
-                return ResponseEntity.ok(Map.of("status", "success", "message", successMessage));
+                return ResponseEntity.ok(ApiResponse.success(successMessage));
         }
 
         // 상신취소
         @PostMapping("/recall/{docId}")
         @ResponseBody
-        public ResponseEntity<Map<String, String>> recall(@PathVariable(name = "docId") Long docId,
+        public ResponseEntity<ApiResponse<Void>> recall(@PathVariable(name = "docId") Long docId,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                Map<String, String> response = new HashMap<>();
-                try {
-                        elecApprovalService.withdrawApproval(docId, userDetails.getUsername());
-                        response.put("message", "상신 취소가 성공적으로 완료되었습니다.");
-                        return ResponseEntity.ok(response);
-                } catch (Exception e) {
-                        response.put("message", e.getMessage());
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-                }
+                elecApprovalService.withdrawApproval(docId, userDetails.getUsername());
+                return ResponseEntity.ok(ApiResponse.success("상신 취소가 성공적으로 완료되었습니다."));
         }
 
         @DeleteMapping("/delete/{docId}")
-        public ResponseEntity<Map<String, String>> deleteDocument(
+        public ResponseEntity<ApiResponse<Void>> deleteDocument(
                         @PathVariable(name = "docId") int docId,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                try {
-                        elecApprovalService.deleteDocument(docId, userDetails.getUsername());
-                        return ResponseEntity.ok(Collections.singletonMap("message", "문서가 성공적으로 삭제되었습니다."));
-                } catch (Exception e) {
-                        log.error("문서 삭제 중 오류가 발생했습니다.", e);
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                        .body(Collections.singletonMap("message", e.getMessage()));
-                }
+                elecApprovalService.deleteDocument(docId, userDetails.getUsername());
+                return ResponseEntity.ok(ApiResponse.success("문서가 성공적으로 삭제되었습니다."));
         }
 
         // 내가 저장한 결재선 조회
@@ -331,11 +307,12 @@ public class ElecApprovalController {
         // 결재선 지정 리스트
         @ResponseBody
         @GetMapping("/approver-candidates")
-        public List<ApproverCandidateDto> getAllApproverCandidates() {
+
+        public ResponseEntity<ApiResponse<List<ApproverCandidateDto>>> getAllApproverCandidates() {
                 // log.info("approverCandidates: {}", approverCandidates);
                 List<ApproverCandidateDto> approverCandidates = userService.getAllApproverCandidates();
 
-                return approverCandidates;
+                return ResponseEntity.ok(ApiResponse.success(approverCandidates));
         }
 
         // 첨부파일 다운로드

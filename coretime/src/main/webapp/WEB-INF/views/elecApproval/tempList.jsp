@@ -25,7 +25,7 @@
                                 <tr>
                                     <td>${doc.docId}</td>
                                     <td style="text-align: left; padding-left: 15px;">
-                                        <a href="/elecApproval/documents-temp/${doc.docId}">${doc.title}</a>
+                                        <a href="/elecApproval/documents/${doc.docId}">${doc.title}</a>
                                     </td>
                                     <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                     <td>${doc.docType.displayName}</td>
@@ -33,7 +33,7 @@
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
-                            <tr><td colspan="4" class="no-data">임시저장된 문 서가 없습니다.</td></tr>
+                            <tr><td colspan="4" class="no-data">임시저장된 문서가 없습니다.</td></tr>
                         </c:otherwise>
                     </c:choose>
                 </tbody>

@@ -114,6 +114,10 @@
             AND approval_status = 'PENDING'
     </delete>
     
+    <delete id="deleteAttachmentsByDocId">
+        DELETE FROM attachment WHERE doc_id = #{docId}
+    </delete>
+    
     <select id="selectDocumentsToApprove" resultMap="documentResultMap">
         SELECT
             d.doc_id,
@@ -206,26 +210,6 @@
             AND status IN ('REJECTED', 'RECALLED')
 
     </update>
-
-    <select id="getDocumentDetail" resultMap="documentResultMap">
-        SELECT 
-            d.doc_id,
-            d.doc_type,
-            d.title,
-            d.status,
-            d.initiator_id,
-            d.draft_date,
-            d.json_content,
-            d.updated_at,
-            u.name AS initiator_name,
-            u.department AS initiator_department
-        FROM 
-            documents d
-        LEFT JOIN 
-            users u ON d.initiator_id = u.id
-        WHERE 
-            d.doc_id = #{docId}
-    </select>
 
     <select id="selectApprovedDocumentsByInitiatorId" resultMap="documentResultMap">
         SELECT

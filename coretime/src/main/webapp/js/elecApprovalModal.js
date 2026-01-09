@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedRadio = document.querySelector('input[name="selectedForm"]:checked');
         if (selectedRadio) {
             const selectedFormValue = selectedRadio.value;
-            window.location.href = '/elecApproval/new?formType=' + encodeURIComponent(selectedFormValue);
+            window.location.href = '/elecApproval/documents?formType=' + encodeURIComponent(selectedFormValue);
         } else {
             alert("결재 양식을 선택해주세요.");
         }

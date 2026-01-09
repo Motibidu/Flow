@@ -42,7 +42,7 @@
                     <div class="name">${document.initiatorName}</div>
                     <div class="date"><fmt:formatDate value="${document.draftDate}" pattern="yyyy-MM-dd"/></div>
                 </div>
-                <c:forEach var="history" items="${approvalHistories}">
+                <c:forEach var="history" items="${document.approvalHistories}">
                     <div class="approval-box">
                         <div class="role">${history.approverRank.displayName}</div>
                         <div class="name">
@@ -129,7 +129,7 @@
                 </tr>
             </table>
 
-            <c:if test="${currentUser.id eq currentApproverId and (document.status eq 'PENDING' or document.status eq 'IN_PROGRESS')}">
+            <c:if test="${currentUser.id eq document.currentApproverId and (document.status eq 'PENDING' or document.status eq 'IN_PROGRESS')}">
                 <div class="approval-action-area">
                     <h4>결재 처리</h4>
                     <textarea id="approvalComment" placeholder="결재 의견을 입력해 주세요. (반려 시 사유 필수 입력)"></textarea>
@@ -141,7 +141,7 @@
             </c:if>
 
             <div class="btn-group">
-                <button type="button" class="btn btn-outline" onclick="location.href='/elecApproval'">목록으로</button>.
+                <button type="button" class="btn btn-outline" onclick="location.href='/elecApproval'">목록으로</button>
 
                 <c:if test="${currentUser.id eq document.initiatorId and document.status eq 'TEMP'}">
                     <button class="btn btn-danger" onclick="recallDocument(${document.docId})">상신 취소</button>
@@ -195,7 +195,7 @@
             }
             
             // 재기안
-            function redraftDocument(docId) { location.href = "/elecApproval/redraft/" + docId; }
+            function redraftDocument(docId) { location.href = "/elecApproval/documents/" + docId; }
             
             // 삭제
             function deleteDocument(docId) { 

@@ -520,7 +520,7 @@
 
 
         const docId = '${document.docId}';
-        const url = '/elecApproval/documents-temp/'+ docId;
+        const url = '/elecApproval/documents/temp/'+ docId;
 
         axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
             .then(res => { alert("임시저장 되었습니다."); location.href = "/elecApproval/temp"; })
@@ -549,7 +549,7 @@
 
         const approverIds = selectedApprovers.map(u => u.id);
         const docId = '${document.docId}';
-        const url = (docId && docId !== '') ? '/elecApproval/redraft/' + docId : '/elecApproval/documents';
+        const url = (docId && docId !== '') ? '/elecApproval/documents/' + docId : '/elecApproval/documents';
 
         const formData = new FormData();
         formData.append('title', document.getElementById('title').value);
