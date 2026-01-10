@@ -14,7 +14,7 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(IllegalArgumentException.class)
         public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
-                log.error("잘못된 요청입니다: {}", e.getMessage());
+                log.error("잘못된 요청입니다: {}", e);
 
                 return ResponseEntity
                                 .status(HttpStatus.BAD_REQUEST)
@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(NoHandlerFoundException.class)
         public ResponseEntity<ApiResponse<Void>> handle404(NoHandlerFoundException e) {
                 // ★ 에러(ERROR)가 아니라 경고(WARN)로 로그를 남김 (스택트레이스 제외)
-                log.warn("Page Not Found: {}", e.getHttpMethod(), e.getRequestURL());
+                log.warn("Page Not Found: {} {}", e.getHttpMethod(), e.getRequestURL());
 
                 return ResponseEntity
                                 .status(HttpStatus.NOT_FOUND)
@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception e) {
-                log.error("Unhandled Exception 발생: {}", e.getMessage());
+                log.error("Unhandled Exception 발생", e);
 
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(ApiResponse.error("서버 오류가 발생했습니다: " + e.getMessage()));

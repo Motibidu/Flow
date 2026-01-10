@@ -166,11 +166,12 @@ public class ElecApprovalController {
                         @PathVariable("docId") int docId,
                         @ModelAttribute DocumentReqDto request,
                         @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                        @RequestParam(value = "deleteFileIds", required = false) List<Long> deleteFileIds,
                         @AuthenticationPrincipal UserDetails userDetails) {
                 log.info("docId: {}", docId);
                 log.info("request: {}", request);
                 String userId = userDetails.getUsername();
-                elecApprovalService.redraftDocument(docId, request, files, userDetails.getUsername());
+                elecApprovalService.redraftDocument(docId, request, files, deleteFileIds, userDetails.getUsername());
 
                 return ResponseEntity.ok(ApiResponse.success("/elecApproval/detail/" + docId));
         }
@@ -198,13 +199,15 @@ public class ElecApprovalController {
                         @ModelAttribute DocumentReqDto request,
                         @PathVariable("docId") int docId,
                         @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                        @RequestParam(value = "deleteFileIds", required = false) List<Long> deleteFileIds,
                         @AuthenticationPrincipal UserDetails userDetails) {
 
                 log.info("request: {}", request);
                 log.info("files: {}", files != null ? files.size() : 0);
+                log.info("deleteFileIds: {}", deleteFileIds != null ? deleteFileIds.size() : 0);
                 log.info("docId: {}", docId);
 
-                elecApprovalService.updateTempDocument(docId, request, files, userDetails.getUsername());
+                elecApprovalService.updateTempDocument(docId, request, files, deleteFileIds, userDetails.getUsername());
 
                 return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
         }

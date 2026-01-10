@@ -134,7 +134,37 @@
                     <tr>
                         <th>첨부파일</th>
                         <td>
-                            <input type="file" id="attachments" name="attachments" class="form-control" multiple>
+                            <c:choose>
+                                <c:when test="${empty document.attachments}">
+                                    <input type="file" name="attachments" id="attachments" class="form-control" multiple>
+                                    <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                        <i class="fas fa-info-circle"></i> 파일당 최대 5MB, 최대 5개까지 첨부 가능합니다.
+                                    </div>
+                                </c:when>
+                                <c:otherwise>
+                                    <ul style="list-style: none; padding: 0; margin: 0 0 10px 0;">
+                                        <c:forEach var="file" items="${document.attachments}">
+                                            <li id="file-item-${file.id}" class="file-item" style="margin-bottom: 5px; font-size: 0.9em;">
+                                                <a href="/elecApproval/download/${file.docId}" target="_blank" style="text-decoration: none; color: #007bff;">
+                                                    <i class="fas fa-file-alt"></i> ${file.originName}
+                                                </a>
+                                                <span style="color: #888; font-size: 12px; margin-left: 8px;">
+                                                (<fmt:formatNumber value="${file.fileSize / 1024}" pattern="#,###"/> KB)
+                                                <button type="button" onclick="markFileDelete(${file.id})">❌</button>
+                                            </span>
+                                            </li>
+                                        </c:forEach>
+                                    </ul>
+                                    <input type="file" name="attachments" id="attachments" class="form-control" multiple>
+                                    <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                        <i class="fas fa-info-circle"></i> 파일당 최대 5MB, 최대 5개까지 첨부 가능합니다. (기존 파일 유지)
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
+                            <%-- <input type="file" name="attachments" id="attachments" class="form-control" multiple>
+                            <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                <i class="fas fa-info-circle"></i> 파일당 최대 5MB, 최대 3개까지 첨부 가능합니다.
+                            </div> --%>
                         </td>
                     </tr>
                 </table>
@@ -214,6 +244,17 @@
     // [전역 변수]
     let selectedApprovers = [];
     let allOrgUsers = [];
+    let deleteFileIds = [];
+
+    function markFileDelete(fileId) {
+        if(!confirm("이 파일을 삭제하시겠습니까? (저장 시 반영됩니다)")) return;
+        
+        // 1. 배열에 ID 추가
+        deleteFileIds.push(fileId);
+        
+        // 2. 화면에서만 안 보이게 숨김 (실제 삭제는 서버 전송 후 처리)
+        document.getElementById('file-item-' + fileId).style.display = 'none';
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
 
@@ -495,6 +536,8 @@
     
     // 임시저장
     function saveTemp() {
+        if (!validateFiles()) return;
+
         if(!confirm("작성 중인 내용을 임시저장 하시겠습니까?")) return;
 
         const vacationDetail = {
@@ -514,6 +557,8 @@
         // 결재선이 지정되어 있다면 함께 저장 (선택사항)
         selectedApprovers.map(u => u.id).forEach(id => formData.append('approverIds', id));
 
+        deleteFileIds.forEach(id => formData.append('deleteFileIds', id));
+
         const fileInput = document.getElementById('attachments');
         for (let i = 0; i < fileInput.files.length; i++) {
             formData.append('files', fileInput.files[i]);
@@ -521,7 +566,7 @@
 
 
         const docId = '${document.docId}';
-        const url = '/elecApproval/documents/temp/'+ docId;
+        const url = docId ? '/elecApproval/documents/temp/'+ docId: '/elecApproval/documents/temp';
 
         axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
             .then(res => { alert("임시저장 되었습니다."); location.href = "/elecApproval/temp"; })
@@ -530,6 +575,8 @@
 
     document.getElementById('vacationForm').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        if (!validateFiles()) return;
 
         if (selectedApprovers.length === 0) {
             alert("최소 1명 이상의 결재자를 지정해야 합니다.");
@@ -563,6 +610,9 @@
         for (let i = 0; i < fileInput.files.length; i++) {
             formData.append('files', fileInput.files[i]);
         }
+        
+        deleteFileIds.forEach(id => formData.append('deleteFileIds', id));
+
 
         axios.post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
             .then(res => {
@@ -581,6 +631,32 @@
         axios.post('/elecApproval/recall/' + docId)
             .then(res => { alert("상신이 취소되었습니다."); location.href = '/elecApproval'; })
             .catch(err => { console.error(err); alert("취소 중 오류가 발생했습니다."); });
+    }
+
+    // 파일 검증 함수 (Save/Submit 버튼 클릭 시 호출)
+    function validateFiles() {
+        const fileInput = document.getElementById('attachments');
+        const files = fileInput.files;
+        
+        // 1. 개수 제한 (예: 최대 5개)
+        // 기존 파일 개수(화면에 보이는 것) + 새로 추가한 파일 개수 체크
+        const existingCount = document.querySelectorAll('.file-item:not([style*="display: none"])').length;
+        const newCount = files.length;
+        
+        if (existingCount + newCount > 5) {
+            alert("첨부파일은 최대 5개까지만 등록 가능합니다.");
+            return false;
+        }
+
+        // 2. 용량 제한 (예: 10MB)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].size > maxSize) {
+                alert("파일 크기는 10MB를 초과할 수 없습니다: " + files[i].name);
+                return false;
+            }
+        }
+        return true;
     }
     </script>
 </t:layout>

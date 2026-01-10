@@ -226,7 +226,7 @@ public class ElecApprovalService {
                 elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
 
                 // 5. 첨부파일 삭제
-                deleteAttachments(docId);
+                deleteAttachmentsByDocId(docId);
 
                 // 6. 문서 삭제
                 elecApprovalMapper.deleteDocument(docId);
@@ -315,11 +315,11 @@ public class ElecApprovalService {
 
                 // 4. 파일 저장
                 if (files != null && !files.isEmpty()) {
-                        saveFiles(docId, files);
+                        saveFilesAndAttachment(docId, files);
                 }
         }
 
-        private void saveFiles(int docId, List<MultipartFile> files) {
+        private void saveFilesAndAttachment(int docId, List<MultipartFile> files) {
                 File dir = new File(uploadDir);
                 log.info("uploadDir: {}", uploadDir);
                 if (!dir.exists())
@@ -391,14 +391,15 @@ public class ElecApprovalService {
 
                 // 4. 파일 저장
                 if (files != null && !files.isEmpty()) {
-                        saveFiles(docId, files);
+                        saveFilesAndAttachment(docId, files);
                 }
         }
 
         // 임시저장 업데이트
-        public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files, String loginId) {
+        public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files,
+                        List<Long> deleteFileIds, String loginId) {
 
-                // 1. 문서 생성 및 업데이트
+                // 문서 생성 및 업데이트
                 DocumentEntity documentEntity = DocumentEntity.builder()
                                 .docId(docId)
                                 .docType(request.getDocType())
@@ -412,16 +413,16 @@ public class ElecApprovalService {
 
                 elecApprovalMapper.updateTempDocumentEntity(documentEntity);
 
-                // 2. 기존 결재선 삭제
+                // 기존 결재선 삭제 및 생성
                 elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
-
-                // 3. 결재선 생성 및 저장
                 createApprovalLine(docId, request.getApproverIds());
 
-                // 4. 파일 저장
+                // 파일 저장 및 삭제
                 if (files != null && !files.isEmpty()) {
-                        saveFiles(docId, files);
+                        saveFilesAndAttachment(docId, files);
                 }
+
+                deleteAttachmentsAndFiles(deleteFileIds);
         }
 
         public PageInfo<DocumentRespDto> findAllRejectedOrRecalled(String username, int page, int size) {
@@ -481,8 +482,9 @@ public class ElecApprovalService {
         }
 
         @Transactional
-        public void redraftDocument(int docId, DocumentReqDto request, List<MultipartFile> files, String username) {
-                // 1. 문서 가져오기 및 권한 체크
+        public void redraftDocument(int docId, DocumentReqDto request, List<MultipartFile> files,
+                        List<Long> deleteFileIds, String username) {
+                // 문서 가져오기 및 권한 체크
                 DocumentRespDto document = elecApprovalMapper.selectDocumentById(docId)
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
 
@@ -490,46 +492,57 @@ public class ElecApprovalService {
                         throw new UnauthorizedException(HttpStatus.FORBIDDEN, "본인의 문서만 재상신할 수 있습니다.");
                 }
 
-                // 2. 문서 정보 업데이트 (제목, 내용, 상태 -> PENDING)
+                // 문서 정보 업데이트 (제목, 내용, 상태 -> PENDING)
                 document.setTitle(request.getTitle());
                 document.setJsonContent(request.getJsonContent());
                 document.setStatus(DocumentStatus.PENDING);
 
                 elecApprovalMapper.updateDocumentForRedraft(document);
 
-                // 3. 파일 저장 (새로 추가된 파일이 있는 경우)
+                // 파일 저장 (새로 추가된 파일이 있는 경우)
                 if (files != null && !files.isEmpty()) {
-                        saveFiles(docId, files);
+                        saveFilesAndAttachment(docId, files);
                 }
 
-                // 4. 기존 결재선 삭제
+                // 첨부파일+ DB 삭제
+                deleteAttachmentsAndFiles(deleteFileIds);
+
+                // 기존 결재선 삭제
                 elecApprovalHistoryMapper.deleteHistoryByDocId(docId);
 
-                // 5. 결재선 생성 및 저장
-                if (request.getApproverIds() != null && !request.getApproverIds().isEmpty()) {
-                        List<ElecApprovalHistoryEntity> histories = new ArrayList<>();
-                        List<String> approverIds = request.getApproverIds();
+                // 결재선 생성 및 저장
+                createApprovalLine(docId, request.getApproverIds());
 
-                        for (int i = 0; i < approverIds.size(); i++) {
-                                histories.add(ElecApprovalHistoryEntity.builder()
-                                                .docId(docId)
-                                                .approverId(approverIds.get(i))
-                                                .approvalStatus(i == 0 ? ApprovalStatus.PENDING : ApprovalStatus.WAIT)
-                                                .approvalOrder(i + 1)
-                                                .build());
-                        }
-                        elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
-
-                        // 6. 첫 번째 결재자에게 알림 전송
-                        String firstApproverId = histories.get(0).getApproverId();
-                        notificationService.send(firstApproverId, document.getTitle(),
-                                        "재상신된 결재문서가 도착했습니다: " + document.getDocType().getDisplayName(),
-                                        "/elecApproval/detail/" + docId);
-                }
+                // 6. 첫 번째 결재자에게 알림 전송
+                String firstApproverId = request.getApproverIds().get(0);
+                notificationService.send(firstApproverId, document.getTitle(),
+                                "재상신된 결재문서가 도착했습니다: " + document.getDocType().getDisplayName(),
+                                "/elecApproval/detail/" + docId);
         }
 
         // 첨부파일 삭제
-        private void deleteAttachments(int docId) {
+        private void deleteFileFromDisk(String savedName) {
+                File file = new File(uploadDir, savedName);
+                if (file.exists()) {
+                        file.delete();
+                }
+        }
+
+        // 첨부파일+ DB 삭제
+        private void deleteAttachmentsAndFiles(List<Long> deleteFileIds) {
+                if (deleteFileIds != null && !deleteFileIds.isEmpty()) {
+                        // A. 실제 파일 삭제 (로컬 디스크)
+                        List<AttachmentEntity> filesToDelete = elecApprovalMapper.selectAllByIds(deleteFileIds);
+                        for (AttachmentEntity file : filesToDelete) {
+                                deleteFileFromDisk(file.getSavedName()); // 파일 삭제 유틸 메서드 호출
+                        }
+                        // B. DB 데이터 삭제
+                        elecApprovalMapper.deleteByIds(deleteFileIds);
+                }
+        }
+
+        // docId로 첨부파일 DB 삭제
+        private void deleteAttachmentsByDocId(int docId) {
                 List<AttachmentEntity> attachments = elecApprovalMapper.selectAttachmentsByDocId(docId);
                 if (attachments != null && !attachments.isEmpty()) {
                         for (AttachmentEntity attachment : attachments) {
@@ -557,5 +570,6 @@ public class ElecApprovalService {
                         }
                         elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
                 }
+
         }
 }

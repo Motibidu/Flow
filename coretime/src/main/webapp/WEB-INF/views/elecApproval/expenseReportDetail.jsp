@@ -216,7 +216,7 @@
                 }
             }
             
-            function redraftDocument(docId) { location.href = "/elecApproval/edit/" + docId; }
+            function redraftDocument(docId) { location.href = "/elecApproval/documents/" + docId; }
             
             function deleteDocument(docId) {
                 if(confirm("영구 삭제하시겠습니까?")) {

@@ -186,7 +186,7 @@
             d.draft_date ASC
     </select>
 
-    <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.AttachmentEntity">
+    <update id="updateAttachmentForRedraft" parameterType="com.flow.coretime.elecApproval.model.AttachmentEntity">
         UPDATE attachment
         SET
             origin_name = #{origin_name},
@@ -199,9 +199,10 @@
             AND status IN ('REJECTED', 'RECALLED', 'TEMP')
     </update>
 
-    <update id="updateAttachmentsForRedraft" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
-        UPDATE attachment
+    <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
+        UPDATE documents
         SET
+            title= #{title},
             json_content = #{jsonContent},
             status = 'PENDING',
             updated_at = NOW()
@@ -426,4 +427,21 @@
         ORDER BY
             d.draft_date DESC
     </select>
+
+    <select id= "selectAllByIds" resultType= "com.flow.coretime.elecApproval.model.AttachmentEntity">
+        SELECT
+            *
+        FROM
+            attachment
+        WHERE
+            id IN <foreach collection="ids" item="id" separator="," open="(" close=")"> #{id}</foreach>
+    </select>
+
+    <delete id= "deleteByIds">
+        DELETE
+        FROM
+            attachment
+        WHERE
+            id IN <foreach collection="ids" item="id" separator="," open="(" close=")"> #{id}</foreach>
+    </delete>
 </mapper>

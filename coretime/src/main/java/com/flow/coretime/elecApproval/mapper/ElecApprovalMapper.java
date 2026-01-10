@@ -36,7 +36,7 @@ public interface ElecApprovalMapper {
         // update
         void updateDocumentStatus(DocumentRespDto document);
 
-        int updateDocumentForRedraft(DocumentRespDto redraftData);
+        int updateDocumentForRedraft(DocumentRespDto attachment);
 
         // delete
         void deleteDocument(int docId);
@@ -71,5 +71,9 @@ public interface ElecApprovalMapper {
                         @Param("keyword") String keyword);
 
         void updateAttachmentsForRedraft(AttachmentEntity attachment);
+
+        List<AttachmentEntity> selectAllByIds(@Param("ids") List<Long> deleteFileIds);
+
+        void deleteByIds(@Param("ids") List<Long> deleteFileIds);
 
 }
