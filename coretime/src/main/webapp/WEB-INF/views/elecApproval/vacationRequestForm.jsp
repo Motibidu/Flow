@@ -71,7 +71,7 @@
                 <div class="name">${empty document ? currentUserName : document.initiatorName}</div>
                 <div class="status">작성중</div>
             </div>
-            </div>
+        </div>
 
         <form id="vacationForm">
             <table class="info-table">
@@ -230,13 +230,13 @@
             } catch (e) { console.error("데이터 파싱 실패", e); }
         }
 
-        <c:if test="${not empty approvalLines}">
-            <c:forEach items="${approvalLines}" var="line">
+        <c:if test="${not empty document.approvalHistories}">
+            <c:forEach items="${document.approvalHistories}" var="line">
                 selectedApprovers.push({
-                    id: "${line.userId}", 
-                    name: "${line.userName}", 
-                    position: "${line.position.displayName}",
-                    department: "${line.department.displayName}"
+                    id: "${line.approverId}", 
+                    name: "${line.approverName}", 
+                    position: "${line.approverPosition.displayName}",
+                    department: "${line.approverDepartment.displayName}"
                 });
             </c:forEach>
             renderApprovers(); 
@@ -290,7 +290,8 @@
         // 전체 유저 조회 API
         axios.get('/elecApproval/approver-candidates') 
             .then(res => {
-                allOrgUsers = res.data; 
+                console.log("res: ", res);
+                allOrgUsers = res.data.data; 
                 renderUserList(allOrgUsers);
             })
             .catch(err => {

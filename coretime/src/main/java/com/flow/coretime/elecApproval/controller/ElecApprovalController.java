@@ -43,7 +43,7 @@ import com.flow.coretime.elecApproval.model.ApproverCandidateDto;
 import com.flow.coretime.elecApproval.model.AttachmentEntity;
 import com.flow.coretime.elecApproval.model.DocumentRespDto;
 import com.flow.coretime.elecApproval.model.DocumentReqDto;
-import com.flow.coretime.elecApproval.model.ElecApprovalHistory;
+import com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto;
 import com.flow.coretime.elecApproval.model.MyLineResponseDto;
 import com.flow.coretime.elecApproval.model.MyLineSaveDto;
 import com.flow.coretime.elecApproval.service.ElecApprovalService;
@@ -159,15 +159,18 @@ public class ElecApprovalController {
                 return "elecApproval/vacationEditForm";
         }
 
-        // 전자결재 재작성 제출
+        // 전자결재 임시저장/상신취소-> 상신
         @ResponseBody
         @PostMapping("/documents/{docId}")
-        public ResponseEntity<ApiResponse<String>> redraftDocument(@PathVariable("docId") int docId,
-                        @RequestBody DocumentRespDto redraftData,
+        public ResponseEntity<ApiResponse<String>> redraftDocument(
+                        @PathVariable("docId") int docId,
+                        @ModelAttribute DocumentReqDto request,
+                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                log.info("redraftData: {}", redraftData);
+                log.info("docId: {}", docId);
+                log.info("request: {}", request);
                 String userId = userDetails.getUsername();
-                elecApprovalService.redraftDocument(userId, docId, redraftData);
+                elecApprovalService.redraftDocument(docId, request, files, userDetails.getUsername());
 
                 return ResponseEntity.ok(ApiResponse.success("/elecApproval/detail/" + docId));
         }
@@ -188,7 +191,7 @@ public class ElecApprovalController {
                 return ResponseEntity.ok(ApiResponse.success("성공적으로 생성되었습니다."));
         }
 
-        // 전자결재 재 임시저장
+        // 전자결재 재임시저장
         @ResponseBody
         @PostMapping("/documents/temp/{docId}")
         public ResponseEntity<ApiResponse<Void>> updateTempDocument(

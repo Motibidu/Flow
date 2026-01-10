@@ -24,7 +24,7 @@ public interface ElecApprovalMapper {
 
         List<DocumentRespDto> selectApprovedDocumentsByInitiatorId(@Param("initiatorId") String initiatorId);
 
-        Optional<DocumentRespDto> getDocumentById(@Param("docId") int docId);
+        Optional<DocumentRespDto> selectDocumentById(@Param("docId") int docId);
 
         // insert
         void insertDocument(DocumentRespDto document);
@@ -69,5 +69,7 @@ public interface ElecApprovalMapper {
                         @Param("statusList") List<DocumentStatus> statusList,
                         @Param("searchType") String searchType,
                         @Param("keyword") String keyword);
+
+        void updateAttachmentsForRedraft(AttachmentEntity attachment);
 
 }

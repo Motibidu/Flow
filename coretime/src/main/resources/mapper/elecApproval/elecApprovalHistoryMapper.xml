@@ -3,7 +3,7 @@
 
 <mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper">
 
-    <resultMap id="approvalHistoryResultMap" type="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
+    <resultMap id="approvalHistoryResultMap" type="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto">
         <id property="historyId" column="history_id"/>
         <result property="docId" column="doc_id"/>
         <result property="approverId" column="approver_id"/>
@@ -15,7 +15,7 @@
         <result property="approverRank" column="approver_rank"/>
     </resultMap>
 
-    <insert id="insertApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory"
+    <insert id="insertApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto"
         useGeneratedKeys="true" keyProperty="historyId">
         INSERT INTO approval_history (
             doc_id,
@@ -71,7 +71,7 @@
         </foreach>
     </insert>
 
-    <update id="updateApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistory">
+    <update id="updateApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto">
         UPDATE approval_history
         SET
             approval_status = #{approvalStatus},
@@ -122,12 +122,12 @@
         LIMIT 1 
     </select>
 
-        <delete id="deleteHistoryByDocId" parameterType="int">
-            DELETE FROM approval_history
-            WHERE doc_id = #{docId}
-        </delete>
+    <delete id="deleteHistoryByDocId" parameterType="int">
+        DELETE FROM approval_history
+        WHERE doc_id = #{docId}
+    </delete>
 
-    <select id="findApprovalHistoryByDocId" resultMap="approvalHistoryResultMap">
+    <select id="findApprovalHistoryByDocId" resultType="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto">
         SELECT
             AH.history_id,
             AH.doc_id,
@@ -137,7 +137,9 @@
             AH.comments,
             AH.action_date,
             U.name AS approver_name,
-            U.rank_name AS approver_rank
+            U.rank_name AS approver_rank,
+            U.position AS approver_position,
+            U.department AS approver_department
         FROM
             approval_history AH
         JOIN

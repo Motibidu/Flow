@@ -20,7 +20,7 @@
     </resultMap>
 
 
-    <select id="getDocumentById" resultMap="documentResultMap">
+    <select id="selectDocumentById" resultMap="documentResultMap">
         SELECT 
                 d.doc_id,
                 d.doc_type,
@@ -183,19 +183,31 @@
             d.initiator_id = #{initiatorId}
             AND d.status IN ('PENDING', 'IN_PROGRESS') 
         ORDER BY
-            d.draft_date DESC
+            d.draft_date ASC
     </select>
 
-    <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
-        UPDATE documents
+    <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.AttachmentEntity">
+        UPDATE attachment
         SET
-            title = #{title},
+            origin_name = #{origin_name},
+            saved_name = #{saved_name},
+            file_path = #{file_path},
+            file_size = #{file_size},
+            updated_at = NOW()
+        WHERE
+            doc_id = #{doc_id}
+            AND status IN ('REJECTED', 'RECALLED', 'TEMP')
+    </update>
+
+    <update id="updateAttachmentsForRedraft" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
+        UPDATE attachment
+        SET
             json_content = #{jsonContent},
             status = 'PENDING',
             updated_at = NOW()
         WHERE
             doc_id = #{docId}
-            AND status IN ('REJECTED', 'RECALLED')
+            AND status IN ('REJECTED', 'RECALLED', 'TEMP')
     </update>
 
     <update id="updateTempDocumentEntity" parameterType="com.flow.coretime.elecApproval.model.DocumentEntity">
@@ -203,11 +215,10 @@
         SET
             title = #{title},
             json_content = #{jsonContent},
-            status = 'PENDING',
             updated_at = NOW()
         WHERE
             doc_id = #{docId}
-            AND status IN ('REJECTED', 'RECALLED')
+            AND status= 'TEMP'
 
     </update>
 
@@ -294,28 +305,6 @@
             AND d.initiator_id = #{userId}
     </select>
 
-    <select id="selectPendingOrInProgressByKeyword" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT 
-                d.doc_id,
-                d.doc_type,
-                d.title,
-                d.status,
-                d.initiator_id,
-                d.draft_date,
-                d.json_content,
-                d.updated_at,
-                u.id AS initiator_id,
-                u.name AS initiator_name,
-                u.department AS initiator_department,
-                u.rank_name AS initiator_rank
-        FROM 
-            documents d
-        JOIN
-            users u ON d.initiator_id = u.id
-        WHERE 
-            d.status IN ('PENDING', 'IN_PROGRESS')
-            AND 
-    </select>
 
     <select id="selectAllRejectedOrRecalled" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
         SELECT 
@@ -337,6 +326,7 @@
             users u ON d.initiator_id = u.id
         WHERE 
             d.status IN ('REJECTED', 'RECALLED')
+            AND d.initiator_id = #{userId}
     </select>
 
     <select id="selectAllApproved" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
@@ -359,6 +349,7 @@
             users u ON d.initiator_id = u.id
         WHERE 
             d.status IN ('APPROVED')
+            AND d.initiator_id = #{userId}
     </select>
 
     <select id="selectAllTemp" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
@@ -381,6 +372,7 @@
             users u ON d.initiator_id = u.id
         WHERE 
             d.status IN ('TEMP')
+            AND d.initiator_id = #{userId}
     </select>
 
     <select id="selectAllMyTurn" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
@@ -406,6 +398,7 @@
         WHERE 
             ah.approver_id = #{userId}
             AND ah.approval_status = 'PENDING'
+            AND d.initiator_id = #{userId}
     </select>
 
     <select id= "selectByStatusAndKeyword" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">

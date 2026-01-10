@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import com.flow.coretime.common.enums.DepartmentType;
+import com.flow.coretime.common.enums.PositionType;
 import com.flow.coretime.common.enums.RankType;
 import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 
@@ -14,7 +16,7 @@ import com.flow.coretime.elecApproval.enums.ApprovalStatus;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ElecApprovalHistory {
+public class ElecApprovalHistoryRespDto {
         private int historyId;
         private int docId;
         private String approverId;
@@ -28,4 +30,6 @@ public class ElecApprovalHistory {
         // 결재선 표시를 위한 추가 필드 (JOIN 또는 UserService 호출로 채워짐)
         private String approverName; // USERS.NAME
         private RankType approverRank; // USERS.RANK (User 모델에 rank 필드가 있다면)
+        private PositionType approverPosition;
+        private DepartmentType approverDepartment;
 }

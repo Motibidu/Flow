@@ -37,7 +37,7 @@ public class DocumentRespDto {
 
         
         private List<AttachmentEntity> attachments;
-        private List<ElecApprovalHistory> approvalHistories;
+        private List<ElecApprovalHistoryRespDto> approvalHistories;
 
         public String getInitiatorDepartmentName() {
                 return initiatorDepartment != null ? initiatorDepartment.getDisplayName() : "";
@@ -49,7 +49,7 @@ public class DocumentRespDto {
                 return approvalHistories.stream()
                         .filter(h -> ApprovalStatus.PENDING.equals(h.getApprovalStatus()))
                         .findFirst()
-                        .map(ElecApprovalHistory::getApproverId)
+                        .map(ElecApprovalHistoryRespDto::getApproverId)
                         .orElse(null);
         }
 }
