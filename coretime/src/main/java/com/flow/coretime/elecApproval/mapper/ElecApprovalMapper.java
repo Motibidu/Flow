@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.flow.coretime.elecApproval.enums.DocumentStatus;
 import com.flow.coretime.elecApproval.model.AttachmentEntity;
 import com.flow.coretime.elecApproval.model.DocumentRespDto;
 import com.flow.coretime.users.model.User;
@@ -62,5 +63,11 @@ public interface ElecApprovalMapper {
         List<DocumentRespDto> selectAllMyTurn(String username);
 
         void deleteAttachmentsByDocId(int docId);
+
+        List<DocumentRespDto> selectByStatusAndKeyword(
+                        @Param("userId") String userId,
+                        @Param("statusList") List<DocumentStatus> statusList,
+                        @Param("searchType") String searchType,
+                        @Param("keyword") String keyword);
 
 }

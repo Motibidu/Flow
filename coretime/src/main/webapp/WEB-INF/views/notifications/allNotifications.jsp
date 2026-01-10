@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    <%@ include file="../header.jsp" %>
+    <%@ include file="../common/header.jsp" %>
 
     <div class="container notif-page-container">
         <div class="d-flex justify-content-between align-items-center mb-4">

@@ -98,7 +98,7 @@ public class ElecApprovalController {
 
                 if (DocumentType.VACATION_REQUEST.toString().equals(formType)) {
                         List<ApprovalLineConfigRespDto> approvalLines = elecApprovalLineConfigMapper
-                                        .getApprovalLineConfigRespDto(currentUser.getDepartment(),
+                                        .getApprovalLineConfigRespDto(currentUser.getId(), currentUser.getDepartment(),
                                                         DocumentType.VACATION_REQUEST);
                         log.info("approvalLines: {}", approvalLines);
                         model.addAttribute("approvalLines", approvalLines);
@@ -106,14 +106,14 @@ public class ElecApprovalController {
                         return "elecApproval/vacationRequestForm";
                 } else if (DocumentType.EXPENSE_REPORT.toString().equals(formType)) {
                         List<ApprovalLineConfigRespDto> approvalLines = elecApprovalLineConfigMapper
-                                        .getApprovalLineConfigRespDto(currentUser.getDepartment(),
+                                        .getApprovalLineConfigRespDto(currentUser.getId(), currentUser.getDepartment(),
                                                         DocumentType.EXPENSE_REPORT);
                         model.addAttribute("approvalLines", approvalLines);
 
                         return "elecApproval/expenseReportForm";
                 } else if (DocumentType.GENERAL_PROPOSAL.toString().equals(formType)) {
                         List<ApprovalLineConfigRespDto> approvalLines = elecApprovalLineConfigMapper
-                                        .getApprovalLineConfigRespDto(currentUser.getDepartment(),
+                                        .getApprovalLineConfigRespDto(currentUser.getId(), currentUser.getDepartment(),
                                                         DocumentType.GENERAL_PROPOSAL);
                         model.addAttribute("approvalLines", approvalLines);
 
@@ -364,10 +364,16 @@ public class ElecApprovalController {
         // 진행중인 문서
         @GetMapping("/pending-or-progress")
         public String pendingOrProgressList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "searchType", required = false) String searchType,
+                        @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "page", defaultValue = "1") int page,
                         @RequestParam(value = "size", defaultValue = "15") int size) {
+
+                log.info("searchType: {}", searchType);
+                log.info("keyword: {}", keyword);
                 PageInfo<DocumentRespDto> pageInfo = elecApprovalService
-                                .findAllPendingOrInProgress(userDetails.getUsername(), page, size);
+                                .findAllPendingOrInProgress(userDetails.getUsername(), page, size, searchType, keyword);
+                log.info("pageInfo: {}", pageInfo);
                 model.addAttribute("docList", pageInfo.getList());
                 model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/pendingOrProgressList";

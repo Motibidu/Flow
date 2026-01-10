@@ -12,8 +12,10 @@ import com.flow.coretime.elecApproval.model.ElecApprovalLineConfigEntity;
 
 @Mapper
 public interface ElecApprovalLineConfigMapper {
-        List<ElecApprovalLineConfigEntity> getApprovalConfigList(DocumentType docType);
+        List<ElecApprovalLineConfigEntity> getApprovalConfigList(DocumentType docType, String userId);
 
-        List<ApprovalLineConfigRespDto> getApprovalLineConfigRespDto(@Param("department") DepartmentType department,
+        List<ApprovalLineConfigRespDto> getApprovalLineConfigRespDto(
+                        @Param("userId") String userId,
+                        @Param("department") DepartmentType department,
                         @Param("docType") DocumentType docType);
 }

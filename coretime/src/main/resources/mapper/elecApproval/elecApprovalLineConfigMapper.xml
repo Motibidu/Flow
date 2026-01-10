@@ -14,6 +14,7 @@
                         approval_line_config
                 WHERE 
                         doc_type = #{docType}
+
                 ORDER BY 
                         approval_order ASC
         </select>
@@ -38,6 +39,7 @@
                                 )
                 WHERE 
                         doc_type = #{docType}
+                        AND u.id != #{userId}
                 ORDER BY 
                         approval_order ASC
         </select>

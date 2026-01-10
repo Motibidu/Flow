@@ -90,44 +90,45 @@ public class ElecApprovalService {
         }
 
         // 전자결재 등록하기
-        @Transactional
-        public void createDocumentAndInitialApproval(DocumentRespDto document, String loginId) {
-                // 1. 기안자 정보 상세 조회
-                User initiator = userService.findById(loginId)
-                                .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
+        // @Transactional
+        // public void createDocumentAndInitialApproval(DocumentRespDto document, String
+        // loginId) {
+        // // 1. 기안자 정보 상세 조회
+        // User initiator = userService.findById(loginId)
+        // .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
 
-                // 2. 누락된 필드 채우기
-                document.setInitiatorId(initiator.getId());
-                document.setInitiatorName(initiator.getName());
-                document.setInitiatorRank(initiator.getRank());
-                document.setInitiatorDepartment(initiator.getDepartment());
+        // // 2. 누락된 필드 채우기
+        // document.setInitiatorId(initiator.getId());
+        // document.setInitiatorName(initiator.getName());
+        // document.setInitiatorRank(initiator.getRank());
+        // document.setInitiatorDepartment(initiator.getDepartment());
 
-                document.setDraftDate(new Date());
-                document.setUpdatedAt(new Date());
-                document.setStatus(DocumentStatus.PENDING);
+        // document.setDraftDate(new Date());
+        // document.setUpdatedAt(new Date());
+        // document.setStatus(DocumentStatus.PENDING);
 
-                // 3. 문서 저장 (DB insert 후 DOC_ID가 생성됨)
-                elecApprovalMapper.insertDocument(document);
+        // // 3. 문서 저장 (DB insert 후 DOC_ID가 생성됨)
+        // elecApprovalMapper.insertDocument(document);
 
-                // 4. 결재선 생성 및 저장
-                List<ElecApprovalHistory> histories = createApprovalLineHistory(document);
-                elecApprovalHistoryMapper.insertApprovalHistories(histories);
+        // // 4. 결재선 생성 및 저장
+        // List<ElecApprovalHistory> histories = createApprovalLineHistory(document);
+        // elecApprovalHistoryMapper.insertApprovalHistories(histories);
 
-                // 5. 첫 번째 결재자에게 알림 전송
-                if (!histories.isEmpty()) {
-                        String firstApproverId = histories.get(0).getApproverId();
-                        log.info("첫 번째 결재자 알림 발송 대상: {}", firstApproverId);
+        // // 5. 첫 번째 결재자에게 알림 전송
+        // if (!histories.isEmpty()) {
+        // String firstApproverId = histories.get(0).getApproverId();
+        // log.info("첫 번째 결재자 알림 발송 대상: {}", firstApproverId);
 
-                        notificationService.send(firstApproverId, document.getTitle(),
-                                        "새로운 결재문서가 도착했습니다: " + document.getDocType().getDisplayName(),
-                                        "/elecApproval/detail/" + document.getDocId());
-                }
-        }
+        // notificationService.send(firstApproverId, document.getTitle(),
+        // "새로운 결재문서가 도착했습니다: " + document.getDocType().getDisplayName(),
+        // "/elecApproval/detail/" + document.getDocId());
+        // }
+        // }
 
         public List<ElecApprovalHistory> createApprovalLineHistory(DocumentRespDto document) {
                 // 1. 해당 문서 타입의 고정 결재선 가져오기
                 List<ElecApprovalLineConfigEntity> configs = elecApprovalLineConfigMapper
-                                .getApprovalConfigList(document.getDocType());
+                                .getApprovalConfigList(document.getDocType(), document.getInitiatorId());
 
                 if (configs == null || configs.isEmpty()) {
                         throw new RuntimeException("해당 문서 양식에 설정된 결재선이 없습니다.");
@@ -276,8 +277,6 @@ public class ElecApprovalService {
 
         @Transactional
         public void redraftDocument(String userId, int docId, DocumentRespDto redraftDocument) {
-                DocumentRespDto document = getDocumentById(docId);
-
                 // 1. 기안자의 부서 정보 가져오기
                 User initiator = userMapper.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("기안자 정보를 찾을 수 없습니다."));
@@ -629,5 +628,24 @@ public class ElecApprovalService {
                 documentRespDto.setAttachments(attachments);
 
                 return documentRespDto;
+        }
+
+        public PageInfo<DocumentRespDto> findAllPendingOrInProgress(String username, int page, int size,
+                        String searchType, String keyword) {
+
+                PageHelper.startPage(page, size);
+                if (searchType != null && !searchType.isEmpty()) {
+                        List<DocumentStatus> statusList = new ArrayList<>();
+                        statusList.add(DocumentStatus.PENDING);
+                        statusList.add(DocumentStatus.IN_PROGRESS);
+
+                        List<DocumentRespDto> list = elecApprovalMapper.selectByStatusAndKeyword(username, statusList,
+                                        searchType, keyword);
+                        log.info("list: {}", list);
+                        return new PageInfo<>(list);
+                } else {
+                        List<DocumentRespDto> list = elecApprovalMapper.selectAllPendingOrInProgress(username);
+                        return new PageInfo<>(list);
+                }
         }
 }

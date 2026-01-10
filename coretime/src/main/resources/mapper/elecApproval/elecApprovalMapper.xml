@@ -169,21 +169,21 @@
 
     <select id="selectInProgressDocumentsByInitiatorId" resultMap="documentResultMap">
         SELECT
-        d.doc_id,
-        d.doc_type,
-        d.title,
-        d.status,
-        d.initiator_id,
-        d.draft_date,
-        d.json_content,
-        d.updated_at
-        FROM
-        documents d
-    WHERE
-        d.initiator_id = #{initiatorId}
-        AND d.status IN ('PENDING', 'IN_PROGRESS') 
-    ORDER BY
-        d.draft_date DESC
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at
+            FROM
+            documents d
+        WHERE
+            d.initiator_id = #{initiatorId}
+            AND d.status IN ('PENDING', 'IN_PROGRESS') 
+        ORDER BY
+            d.draft_date DESC
     </select>
 
     <update id="updateDocumentForRedraft" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
@@ -291,6 +291,30 @@
             users u ON d.initiator_id = u.id
         WHERE 
             d.status IN ('PENDING', 'IN_PROGRESS')
+            AND d.initiator_id = #{userId}
+    </select>
+
+    <select id="selectPendingOrInProgressByKeyword" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT 
+                d.doc_id,
+                d.doc_type,
+                d.title,
+                d.status,
+                d.initiator_id,
+                d.draft_date,
+                d.json_content,
+                d.updated_at,
+                u.id AS initiator_id,
+                u.name AS initiator_name,
+                u.department AS initiator_department,
+                u.rank_name AS initiator_rank
+        FROM 
+            documents d
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE 
+            d.status IN ('PENDING', 'IN_PROGRESS')
+            AND 
     </select>
 
     <select id="selectAllRejectedOrRecalled" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
@@ -382,5 +406,31 @@
         WHERE 
             ah.approver_id = #{userId}
             AND ah.approval_status = 'PENDING'
+    </select>
+
+    <select id= "selectByStatusAndKeyword" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at,
+            u.id AS initiator_id,
+            u.name AS initiator_name,
+            u.department AS initiator_department,
+            u.rank_name AS initiator_rank
+        FROM
+            documents d
+        JOIN
+            users u ON d.initiator_id = u.id
+        WHERE
+            d.initiator_id = #{userId}
+            AND d.status IN <foreach collection="statusList" item="status" separator="," open="(" close=")"> #{status}</foreach>
+            AND d.${searchType} LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY
+            d.draft_date DESC
     </select>
 </mapper>

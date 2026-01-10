@@ -59,7 +59,7 @@
     color: #333;
     text-decoration: none;
     display: block;
-    overflow: hidden;
+    overow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -117,3 +117,5 @@
     border-color: #bbb;
     color: #333;
 }
+
+
