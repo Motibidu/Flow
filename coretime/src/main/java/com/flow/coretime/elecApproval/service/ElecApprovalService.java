@@ -188,21 +188,8 @@ public class ElecApprovalService {
 
         // 상신 취소
         @Transactional
-        public void withdrawApproval(Long docId, String userId) {
-                Map<String, Object> params = new HashMap<>();
-                params.put("docId", docId);
-                params.put("userId", userId);
-
-                // 1. 문서 상태 업데이트
-                int result = elecApprovalMapper.cancelApproval(params);
-
-                // 결과가 0이면 조건(본인 아님 또는 이미 결재됨)에 맞지 않는 것
-                if (result == 0) {
-                        throw new IllegalStateException("취소 가능한 상태가 아니거나 권한이 없습니다.");
-                }
-
-                // 2. 결재선 데이터 삭제
-                elecApprovalMapper.deletePendingHistory(docId);
+        public void recallDocument(Long docId, String userId) {
+                elecApprovalMapper.recallDocument(docId, userId);
         }
 
         @Transactional

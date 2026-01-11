@@ -44,7 +44,7 @@ public interface ElecApprovalMapper {
         void deletePendingHistory(Long docId);
 
         // etc
-        int cancelApproval(Map<String, Object> params);
+        int recallDocument(@Param("docId") Long docId, @Param("userId") String userId);
 
         List<AttachmentEntity> selectAttachmentsByDocId(@Param("docId") int docId);
 

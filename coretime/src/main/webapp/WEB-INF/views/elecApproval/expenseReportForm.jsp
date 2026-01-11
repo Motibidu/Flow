@@ -115,7 +115,33 @@
 
                 <div>
                     <label style="font-weight: bold; display: block; margin-top: 20px; margin-bottom: 8px;">첨부파일</label>
-                    <input type="file" id="attachments" name="attachments" class="form-control" multiple>
+                    <c:choose>
+                        <c:when test="${empty document.attachments}">
+                            <input type="file" id="attachments" name="attachments" class="form-control" multiple>
+                            <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                <i class="fas fa-info-circle"></i> 파일당 최대 10MB, 최대 5개까지 첨부 가능합니다.
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <ul style="list-style: none; padding: 0; margin: 0 0 10px 0;">
+                                <c:forEach var="file" items="${document.attachments}">
+                                    <li id="file-item-${file.id}" class="file-item" style="margin-bottom: 5px; font-size: 0.9em;">
+                                        <a href="/elecApproval/download/${file.id}" target="_blank" style="text-decoration: none; color: #007bff;">
+                                            <i class="fas fa-file-alt"></i> ${file.originName}
+                                        </a>
+                                        <span style="color: #888; font-size: 12px; margin-left: 8px;">
+                                        (<fmt:formatNumber value="${file.fileSize / 1024}" pattern="#,###"/> KB)
+                                        <button type="button" onclick="markFileDelete(${file.id})" style="border:none; background:none; cursor:pointer;">❌</button>
+                                    </span>
+                                    </li>
+                                </c:forEach>
+                            </ul>
+                            <input type="file" id="attachments" name="attachments" class="form-control" multiple>
+                            <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                <i class="fas fa-info-circle"></i> 파일당 최대 10MB, 최대 5개까지 첨부 가능합니다. (기존 파일 유지)
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
 
                 <input type="hidden" id="jsonContent" name="jsonContent">
@@ -188,6 +214,7 @@
             let selectedApprovers = [];
             let allOrgUsers = [];
             let mySavedLines = [];
+            let deleteFileIds = [];
 
             // [초기화 로직] - 페이지 로드 시 실행
             document.addEventListener('DOMContentLoaded', function() {
@@ -211,17 +238,29 @@
                 }
 
                 // 2. 기존 결재선 로드 (재기안 시)
-                <c:if test="${not empty approvalLines}">
-                    <c:forEach items="${approvalLines}" var="line">
-                        selectedApprovers.push({
-                            id: "${line.userId}", 
-                            name: "${line.userName}", 
-                            position: "${line.position.displayName}",
-                            department: "${line.department.displayName}"
+                <c:choose>
+                    <c:when test="${empty document}">
+                        <c:forEach items="${approvalLines}" var="line">
+                            selectedApprovers.push({
+                                id: "${line.userId}", 
+                                name: "${line.userName}", 
+                                position: "${line.position.displayName}",
+                                department: "${line.department.displayName}"
+                            });
+                        </c:forEach>
+                    </c:when>
+                    <c:otherwise>
+                        <c:forEach items="${document.approvalHistories}" var="line">
+                            selectedApprovers.push({
+                                id: "${line.approverId}", 
+                                name: "${line.approverName}", 
+                                position: "${line.approverPosition.displayName}",
+                                department: "${line.approverDepartment.displayName}"
                         });
-                    </c:forEach>
-                    renderApprovers(); 
-                </c:if>
+                        </c:forEach>
+                    </c:otherwise>
+                </c:choose>
+                renderApprovers();
 
                 // 3. 폼 전송 이벤트 리스너 등록
                 document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
@@ -293,7 +332,7 @@
                 document.getElementById('orgModal').style.display = 'flex';
                 if(allOrgUsers.length == 0) {
                     axios.get('/elecApproval/approver-candidates').then(res => {
-                        allOrgUsers = res.data;
+                        allOrgUsers = res.data.data
                         renderUserList(allOrgUsers);
                     });
                 } else {
@@ -373,10 +412,36 @@
                 if(confirm("취소?")) axios.post('/elecApproval/recall/'+id).then(()=> location.href='/elecApproval');
             }
 
+            function markFileDelete(fileId) {
+                if(!confirm("이 파일을 삭제하시겠습니까? (저장 시 반영됩니다)")) return;
+                deleteFileIds.push(fileId);
+                document.getElementById('file-item-' + fileId).style.display = 'none';
+            }
+
+            function validateFiles() {
+                const fileInput = document.getElementById('attachments');
+                const files = fileInput.files;
+                const existingCount = document.querySelectorAll('.file-item:not([style*="display: none"])').length;
+                
+                if (existingCount + files.length > 5) {
+                    alert("첨부파일은 최대 5개까지만 등록 가능합니다.");
+                    return false;
+                }
+                const maxSize = 10 * 1024 * 1024; 
+                for (let i = 0; i < files.length; i++) {
+                    if (files[i].size > maxSize) {
+                        alert("파일 크기는 10MB를 초과할 수 없습니다: " + files[i].name);
+                        return false;
+                    }
+                }
+                return true;
+            }
+
             // [상신 전송 핸들러]
             function handleFormSubmit(e) {
                 e.preventDefault();
                 if (selectedApprovers.length === 0) { alert("결재자를 지정해주세요."); return; }
+                if (!validateFiles()) return;
                 if(!confirm("상신하시겠습니까?")) return;
 
                 const items = [];
@@ -399,6 +464,7 @@
                 
                 const files = document.getElementById('attachments').files;
                 for(let i=0; i<files.length; i++) formData.append('files', files[i]);
+                deleteFileIds.forEach(id => formData.append('deleteFileIds', id));
 
                 const docId = '${document.docId}';
                 const url = docId ? '/elecApproval/documents/' + docId : '/elecApproval/documents';

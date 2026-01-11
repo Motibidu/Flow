@@ -265,7 +265,7 @@ public class ElecApprovalController {
         @ResponseBody
         public ResponseEntity<ApiResponse<Void>> recall(@PathVariable(name = "docId") Long docId,
                         @AuthenticationPrincipal UserDetails userDetails) {
-                elecApprovalService.withdrawApproval(docId, userDetails.getUsername());
+                elecApprovalService.recallDocument(docId, userDetails.getUsername());
                 return ResponseEntity.ok(ApiResponse.success("상신 취소가 성공적으로 완료되었습니다."));
         }
 

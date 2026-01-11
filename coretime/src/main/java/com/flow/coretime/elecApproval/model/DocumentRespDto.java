@@ -35,8 +35,8 @@ public class DocumentRespDto {
         // JOIN테이블: APPROVAL_HISTORY
         private String currentApproverName;
 
-        
         private List<AttachmentEntity> attachments;
+        private List<ApprovalLineConfigRespDto> approvalLinesConfigs;
         private List<ElecApprovalHistoryRespDto> approvalHistories;
 
         public String getInitiatorDepartmentName() {
@@ -45,11 +45,12 @@ public class DocumentRespDto {
 
         // 현재 결재 대기중인 사람의 ID를 반환하는 편의 메서드 (JSP에서 ${document.currentApproverId}로 사용 가능)
         public String getCurrentApproverId() {
-                if (approvalHistories == null) return null;
+                if (approvalHistories == null)
+                        return null;
                 return approvalHistories.stream()
-                        .filter(h -> ApprovalStatus.PENDING.equals(h.getApprovalStatus()))
-                        .findFirst()
-                        .map(ElecApprovalHistoryRespDto::getApproverId)
-                        .orElse(null);
+                                .filter(h -> ApprovalStatus.PENDING.equals(h.getApprovalStatus()))
+                                .findFirst()
+                                .map(ElecApprovalHistoryRespDto::getApproverId)
+                                .orElse(null);
         }
 }

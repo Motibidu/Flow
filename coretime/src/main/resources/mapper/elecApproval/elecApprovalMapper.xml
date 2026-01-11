@@ -12,15 +12,19 @@
         <result property="jsonContent" column="json_content"/>
         <result property="updatedAt" column="updated_at"/>
 
-        <result property="initiatorId" column="initiator_id"/>
         <result property="initiatorName" column="initiator_name"/>
         <result property="initiatorDepartment" column="initiator_department"/>
         <result property="initiatorRank" column="initiator_rank"/>
         <result property="currentApproverName" column="current_approver_name"/>
     </resultMap>
 
+    <!-- 상세 조회용 ResultMap (첨부파일 자동 매핑) -->
+    <resultMap id="documentDetailResultMap" type="com.flow.coretime.elecApproval.model.DocumentRespDto" extends="documentResultMap">
+        <collection property="attachments" column="doc_id" javaType="java.util.List" ofType="com.flow.coretime.elecApproval.model.AttachmentEntity" select="selectAttachmentsByDocId"/>
+    </resultMap>
 
-    <select id="selectDocumentById" resultMap="documentResultMap">
+
+    <select id="selectDocumentById" resultMap="documentDetailResultMap">
         SELECT 
                 d.doc_id,
                 d.doc_type,
@@ -96,13 +100,13 @@
     </update>
 
 
-    <update id="cancelApproval" parameterType="map">
+    <update id="recallDocument">
         UPDATE documents
         SET 
-            status= 'RECALLED',
-            updated_at= NOW()
+            status = 'RECALLED',
+            updated_at = NOW()
         WHERE
-            doc_id= #{docId}
+            doc_id = #{docId}
             AND initiator_id = #{userId}
             AND status = 'PENDING'
     </update>

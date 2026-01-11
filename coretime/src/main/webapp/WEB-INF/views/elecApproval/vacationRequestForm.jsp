@@ -271,17 +271,31 @@
             } catch (e) { console.error("데이터 파싱 실패", e); }
         }
 
-        <c:if test="${not empty document.approvalHistories}">
-            <c:forEach items="${document.approvalHistories}" var="line">
-                selectedApprovers.push({
-                    id: "${line.approverId}", 
-                    name: "${line.approverName}", 
-                    position: "${line.approverPosition.displayName}",
-                    department: "${line.approverDepartment.displayName}"
+        <c:choose>
+            <c:when test="${empty document}">
+                <c:forEach items="${approvalLines}" var="line">
+                    selectedApprovers.push({
+                        id: "${line.userId}", 
+                        name: "${line.userName}", 
+                        position: "${line.position.displayName}",
+                        department: "${line.department.displayName}"
+                    });
+                </c:forEach>
+            </c:when>
+            <c:otherwise>
+                <c:forEach items="${document.approvalHistories}" var="line">
+                    selectedApprovers.push({
+                        id: "${line.approverId}", 
+                        name: "${line.approverName}", 
+                        position: "${line.approverPosition.displayName}",
+                        department: "${line.approverDepartment.displayName}"
                 });
-            </c:forEach>
-            renderApprovers(); 
-        </c:if>
+                </c:forEach>
+            </c:otherwise>
+        </c:choose>
+        renderApprovers(); 
+
+   
     });
 
     // -------------------------------------------------------------
