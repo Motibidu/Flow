@@ -150,5 +150,11 @@
             AH.approval_order ASC
     </select>
 
+    <select id="isUserInApprovalLine" resultType="int">
+        SELECT COUNT(*)
+        FROM approval_history
+        WHERE doc_id = #{docId} AND approver_id = #{userId}
+    </select>
+
 
 </mapper>

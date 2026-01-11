@@ -28,4 +28,6 @@ public interface ElecApprovalHistoryMapper {
         void deleteHistoryByDocId(int docId);
 
         void insertApprovalHistoryEntities(@Param("histories") List<ElecApprovalHistoryEntity> histories);
+
+        int isUserInApprovalLine(@Param("docId") int docId, @Param("userId") String userId);
 }

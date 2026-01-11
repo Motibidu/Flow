@@ -19,6 +19,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -49,6 +50,7 @@ public class ElecApprovalController {
         private final AttachmentService attachmentService;
         private final UserService userService;
 
+        @PreAuthorize("isAuthenticated()")
         @GetMapping
         public String showElecApproval(@AuthenticationPrincipal UserDetails userDetails, Model model) {
                 String currentUserId = userDetails.getUsername();
@@ -70,6 +72,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 작성 페이지
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/documents")
         public String showElecApprovalNew(@RequestParam("formType") String formType,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
@@ -107,6 +110,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 제출
+        @PreAuthorize("isAuthenticated()")
         @ResponseBody
         @PostMapping("/documents")
         public ResponseEntity<ApiResponse<Void>> saveDocument(
@@ -123,6 +127,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장/재상신 페이지
+        @PreAuthorize("@documentChecker.isViewer(#p0, principal.username)")
         @GetMapping("/documents/{docId}")
         public String showEditForm(@PathVariable("docId") int docId, Model model) {
                 DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
@@ -142,6 +147,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장/상신취소-> 상신
+        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @ResponseBody
         @PostMapping("/documents/{docId}")
         public ResponseEntity<ApiResponse<String>> redraftDocument(
@@ -158,6 +164,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장
+        @PreAuthorize("isAuthenticated()")
         @ResponseBody
         @PostMapping("/documents/temp")
         public ResponseEntity<ApiResponse<Void>> saveTempDocument(
@@ -173,6 +180,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장 수정
+        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @ResponseBody
         @PostMapping("/documents/temp/{docId}")
         public ResponseEntity<ApiResponse<Void>> updateTempDocument(
@@ -194,6 +202,7 @@ public class ElecApprovalController {
         }
 
         // 전자결재 상세 페이지
+        @PreAuthorize("@documentChecker.isViewer(#p0, principal.username)")
         @GetMapping("/detail/{docId}")
         public String detailElecApproval(@PathVariable("docId") int docId,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
@@ -220,6 +229,7 @@ public class ElecApprovalController {
         }
 
         // 결재하기
+        @PreAuthorize("@documentChecker.isCurrentApprover(#p0, principal.username)")
         @ResponseBody
         @PostMapping("/approval/{docId}")
         public ResponseEntity<ApiResponse<Void>> approveOrRejectDocument(
@@ -239,6 +249,7 @@ public class ElecApprovalController {
         }
 
         // 상신 취소하기
+        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @PostMapping("/recall/{docId}")
         @ResponseBody
         public ResponseEntity<ApiResponse<Void>> recall(@PathVariable(name = "docId") Long docId,
@@ -248,6 +259,7 @@ public class ElecApprovalController {
         }
 
         // 문서 삭제하기
+        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @DeleteMapping("/delete/{docId}")
         public ResponseEntity<ApiResponse<Void>> deleteDocument(
                         @PathVariable(name = "docId") int docId,
@@ -257,6 +269,7 @@ public class ElecApprovalController {
         }
 
         // 내가 저장한 결재선 불러오기
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/my-lines")
         public ResponseEntity<ApiResponse<List<MyLineResponseDto>>> findMyApprovalLines(
                         @AuthenticationPrincipal UserDetails userDetails) {
@@ -269,6 +282,7 @@ public class ElecApprovalController {
         }
 
         // "내가 저장한 결재선"에 저장
+        @PreAuthorize("isAuthenticated()")
         @PostMapping("/my-lines")
         public ResponseEntity<ApiResponse<Void>> saveMyLine(
                         @RequestBody MyLineSaveDto myLineSaveDto,
@@ -279,6 +293,7 @@ public class ElecApprovalController {
         }
 
         // 내가 저장한 결재선 삭제
+        @PreAuthorize("isAuthenticated()")
         @DeleteMapping("/my-lines/{lineId}")
         @ResponseBody
         public ResponseEntity<ApiResponse<Void>> deleteMyLine(
@@ -290,15 +305,16 @@ public class ElecApprovalController {
         }
 
         // 결재선 지정 리스트
+        @PreAuthorize("isAuthenticated()")
         @ResponseBody
         @GetMapping("/approver-candidates")
-
         public ResponseEntity<ApiResponse<List<ApproverCandidateDto>>> getAllApproverCandidates() {
                 List<ApproverCandidateDto> approverCandidates = userService.getAllApproverCandidates();
                 return ResponseEntity.ok(ApiResponse.success(approverCandidates));
         }
 
         // 첨부파일 다운로드
+        @PreAuthorize("@documentChecker.canDownloadFile(#p0, principal.username)")
         @GetMapping("/download/{fileId}")
         public ResponseEntity<Resource> downloadFile(@PathVariable(name = "fileId") Long fileId)
                         throws MalformedURLException {
@@ -315,6 +331,7 @@ public class ElecApprovalController {
         }
 
         // 임시저장 리스트
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/temp")
         public String tempList(Model model, @AuthenticationPrincipal UserDetails userDetails,
                         @RequestParam(value = "page", defaultValue = "1") int page,
@@ -328,6 +345,7 @@ public class ElecApprovalController {
         }
 
         // 결재 차례 문서 리스트
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/my-turn")
         public String myTurnList(Model model, @AuthenticationPrincipal UserDetails userDetails,
                         @RequestParam(value = "page", defaultValue = "1") int page,
@@ -341,6 +359,7 @@ public class ElecApprovalController {
         }
 
         // 진행중인 문서 리스트
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/pending-or-progress")
         public String pendingOrProgressList(Model model, @AuthenticationPrincipal UserDetails userDetails,
                         @RequestParam(value = "searchType", required = false) String searchType,
@@ -359,6 +378,7 @@ public class ElecApprovalController {
         }
 
         // 반려 및 취소한 문서 리스트
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/rejected-or-recalled")
         public String rejectedOrRecalledList(Model model, @AuthenticationPrincipal UserDetails userDetails,
                         @RequestParam(value = "page", defaultValue = "1") int page,
@@ -371,6 +391,7 @@ public class ElecApprovalController {
         }
 
         // 승인된 문서 리스트
+        @PreAuthorize("isAuthenticated()")
         @GetMapping("/approved")
         public String completedList(Model model, @AuthenticationPrincipal UserDetails userDetails,
                         @RequestParam(value = "page", defaultValue = "1") int page,
