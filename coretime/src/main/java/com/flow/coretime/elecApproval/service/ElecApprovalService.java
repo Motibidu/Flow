@@ -255,6 +255,7 @@ public class ElecApprovalService {
                 }
         }
 
+        @Transactional
         public void deleteMyApprovalLine(String userId, int lineId) {
                 myApprovalLineMapper.deleteMyApprovalLine(userId, lineId);
                 myApprovalLineMapper.deleteMyApprovalLineDetail(lineId);
@@ -344,6 +345,7 @@ public class ElecApprovalService {
         }
 
         // 임시저장
+        @Transactional
         public void saveTempDocument(DocumentReqDto request, List<MultipartFile> files, String loginId) {
                 // 1. 문서 엔티티 생성
                 DocumentEntity documentEntity = DocumentEntity.builder()
@@ -383,6 +385,7 @@ public class ElecApprovalService {
         }
 
         // 임시저장 업데이트
+        @Transactional
         public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files,
                         List<Long> deleteFileIds, String loginId) {
 

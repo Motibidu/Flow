@@ -1,17 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>전자결재 대시보드</title>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 
+<t:layout title="전자결재 대시보드">
+    <jsp:body>
 <style>
     /* ----- 기본 스타일 ----- */
-    body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background-color: #f4f7f6; color: #333; margin: 0; font-size: 14px; }
-    .content { display: flex; gap: 20px; }
-    .main { width: 100%; padding: 20px; }
+    .main { width: 100%; padding: 20px; background-color: #f4f7f6; min-height: 100vh; }
     .main h1 { font-size: 24px; font-weight: 600; color: #1a2a44; margin-bottom: 25px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
 
     /* ----- 상단 요약 카드 (Summary Cards) ----- */
@@ -58,15 +54,6 @@
     .status-IN_PROGRESS { background-color: #17a2b8; }
     .no-data { text-align: center; padding: 30px; color: #999; font-size: 13px; }
 </style>
-</head>
-<body>
-    <div class="header">
-        <%@ include file="../common/header.jsp"%>
-    </div>
-    <div class="content">
-        <div id="nav">
-            <%@ include file="../common/leftNav.jsp"%>
-        </div>
         <div class="main">
             <h1>전자결재 대시보드</h1>
 
@@ -233,7 +220,6 @@
             </div>
 
         </div>
-    </div>
 
     <%@ include file="/WEB-INF/modals/formSelectionModal.jsp"%>
     <script type="text/javascript" src="/js/elecApprovalModal.js"></script>
@@ -256,5 +242,5 @@
             .catch(err => alert('오류 발생: ' + err.message));
         }
     </script>
-</body>
-</html>z
+    </jsp:body>
+</t:layout>

@@ -160,7 +160,7 @@
             </c:if>
 
             <div class="btn-group">
-                <button type="button" class="btn btn-outline" onclick="location.href='/elecApproval'">목록으로</button>
+                <button type="button" class="btn btn-outline" onclick="goBackToList()">목록으로</button>
 
                 <c:if test="${currentUser.id eq document.initiatorId and document.status eq 'PENDING'}">
                     <button class="btn btn-danger" onclick="recallDocument(${document.docId})">상신 취소</button>
@@ -221,6 +221,24 @@
             function deleteDocument(docId) {
                 if(confirm("영구 삭제하시겠습니까?")) {
                     axios.delete("/elecApproval/delete/" + docId).then(res => { alert(res.data.message); location.href = '/elecApproval'; });
+                }
+            }
+
+            function goBackToList() {
+                const status = '${document.status}';
+                const isApprover = '${document.currentApproverId}' === '${currentUser.id}';
+
+                if (status === 'TEMP') {
+                    location.href = '/elecApproval/temp';
+                } else if (status === 'APPROVED') {
+                    location.href = '/elecApproval/approved';
+                } else if (status === 'REJECTED' || status === 'RECALLED') {
+                    location.href = '/elecApproval/rejected-or-recalled';
+                } else if (status === 'PENDING' || status === 'IN_PROGRESS') {
+                    if (isApprover) location.href = '/elecApproval/my-turn';
+                    else location.href = '/elecApproval/pending-or-progress';
+                } else {
+                    location.href = '/elecApproval';
                 }
             }
         </script>

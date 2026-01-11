@@ -138,7 +138,7 @@
                                 <c:when test="${empty document.attachments}">
                                     <input type="file" name="attachments" id="attachments" class="form-control" multiple>
                                     <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
-                                        <i class="fas fa-info-circle"></i> 파일당 최대 5MB, 최대 5개까지 첨부 가능합니다.
+                                        <i class="fas fa-info-circle"></i> 파일당 최대 10MB, 최대 5개까지 첨부 가능합니다.
                                     </div>
                                 </c:when>
                                 <c:otherwise>
@@ -157,7 +157,7 @@
                                     </ul>
                                     <input type="file" name="attachments" id="attachments" class="form-control" multiple>
                                     <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
-                                        <i class="fas fa-info-circle"></i> 파일당 최대 5MB, 최대 5개까지 첨부 가능합니다. (기존 파일 유지)
+                                        <i class="fas fa-info-circle"></i> 파일당 최대 10MB, 최대 5개까지 첨부 가능합니다. (기존 파일 유지)
                                     </div>
                                 </c:otherwise>
                             </c:choose>
