@@ -60,9 +60,6 @@
                         </c:if>
                     </ul>
                 </nav>
-                
-
-                
             </div>
                 <div class="d-flex justify-content-center">
                         <div class="input-group w-50">

@@ -55,8 +55,31 @@
                 </ul>
             </nav>
         </div>
+        <div class="d-flex justify-content-center">
+            <div class="input-group w-50">
+                <select class="form-select" id="searchType" style="width: 15%;">
+                    <option value="title">제목</option>
+                    <option value="doc_id">문서번호</option>
+                </select>
+                <input type="text" class="form-control" id="searchKeyword" placeholder="검색어를 입력하세요" style="width: 70%;">
+                <button class="btn btn-primary" onclick="searchDocs()" style="width: 15%;">검색</button>
+            </div>
+        </div>
         <div style="text-align: right; margin-top: 20px;">
             <button class="btn btn-outline" onclick="location.href='/elecApproval'">← 대시보드로 돌아가기</button>
         </div>
     </div>
+    <script>
+        function searchDocs() {
+            const searchType = document.getElementById('searchType').value;
+            const keyword = document.getElementById('searchKeyword').value;
+            
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', '1');
+            url.searchParams.set('searchType', searchType);
+            url.searchParams.set('keyword', keyword);
+            
+            window.location.href = url.toString();
+        }
+    </script>
 </t:layout>
