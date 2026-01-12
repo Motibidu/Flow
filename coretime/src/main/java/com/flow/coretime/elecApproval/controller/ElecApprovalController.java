@@ -52,21 +52,25 @@ public class ElecApprovalController {
 
         @PreAuthorize("isAuthenticated()")
         @GetMapping
-        public String showElecApproval(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        public String showDashboard(@AuthenticationPrincipal UserDetails userDetails, Model model) {
                 String currentUserId = userDetails.getUsername();
 
-                List<DocumentRespDto> pendingApprovals = elecApprovalQueryService.findPendingApprovals(currentUserId);
-                model.addAttribute("pendingApprovals", pendingApprovals);
+                PageInfo<DocumentRespDto> myTurn = elecApprovalQueryService
+                                .findMyTurn(userDetails.getUsername(), 1, 5, null, null);
+                log.info("myTurn: {}", myTurn);
+                model.addAttribute("myTurn", myTurn);
 
-                List<DocumentRespDto> myInProgressDocs = elecApprovalQueryService.findMyInProgressDocs(currentUserId);
-                model.addAttribute("myInProgressDocs", myInProgressDocs);
+                PageInfo<DocumentRespDto> pendingOrInProgress = elecApprovalQueryService
+                                .findPendingOrInProgress(userDetails.getUsername(), 1, 5, null, null);
+                model.addAttribute("pendingOrInProgress", pendingOrInProgress);
 
-                List<DocumentRespDto> rejectedOrRecalled = elecApprovalQueryService
-                                .findRejectedOrRecalledDocs(currentUserId);
+                PageInfo<DocumentRespDto> rejectedOrRecalled = elecApprovalQueryService
+                                .findRejectedOrRecalled(userDetails.getUsername(), 1, 5, null, null);
                 model.addAttribute("myRejectedOrRecalledDocs", rejectedOrRecalled);
 
-                List<DocumentRespDto> myApprovedDocs = elecApprovalQueryService.findMyApprovedDocs(currentUserId);
-                model.addAttribute("myApprovedDocs", myApprovedDocs);
+                PageInfo<DocumentRespDto> approved = elecApprovalQueryService
+                                .findApproved(userDetails.getUsername(), 1, 5, null, null);
+                model.addAttribute("approved", approved);
 
                 return "elecApproval/elecApproval";
         }
@@ -334,11 +338,13 @@ public class ElecApprovalController {
         @PreAuthorize("isAuthenticated()")
         @GetMapping("/temp")
         public String tempList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "searchType", required = false) String searchType,
+                        @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "page", defaultValue = "1") int page,
                         @RequestParam(value = "size", defaultValue = "15") int size) {
                 PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService.findAllTemp(userDetails.getUsername(),
                                 page,
-                                size);
+                                size, searchType, keyword);
                 model.addAttribute("docList", pageInfo.getList());
                 model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/tempList";
@@ -348,11 +354,13 @@ public class ElecApprovalController {
         @PreAuthorize("isAuthenticated()")
         @GetMapping("/my-turn")
         public String myTurnList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "searchType", required = false) String searchType,
+                        @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "page", defaultValue = "1") int page,
                         @RequestParam(value = "size", defaultValue = "15") int size) {
-                PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService.findAllMyTurn(userDetails.getUsername(),
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService.findMyTurn(userDetails.getUsername(),
                                 page,
-                                size);
+                                size, searchType, keyword);
                 model.addAttribute("docList", pageInfo.getList());
                 model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/myTurnList";
@@ -370,8 +378,8 @@ public class ElecApprovalController {
                 log.info("searchType: {}", searchType);
                 log.info("keyword: {}", keyword);
                 PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService
-                                .findAllPendingOrInProgress(userDetails.getUsername(), page, size, searchType, keyword);
-                log.info("pageInfo: {}", pageInfo);
+                                .findPendingOrInProgress(userDetails.getUsername(), page, size, searchType, keyword);
+                // log.info("pageInfo: {}", pageInfo);
                 model.addAttribute("docList", pageInfo.getList());
                 model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/pendingOrProgressList";
@@ -381,10 +389,12 @@ public class ElecApprovalController {
         @PreAuthorize("isAuthenticated()")
         @GetMapping("/rejected-or-recalled")
         public String rejectedOrRecalledList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "searchType", required = false) String searchType,
+                        @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "page", defaultValue = "1") int page,
                         @RequestParam(value = "size", defaultValue = "15") int size) {
                 PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService
-                                .findAllRejectedOrRecalled(userDetails.getUsername(), page, size);
+                                .findRejectedOrRecalled(userDetails.getUsername(), page, size, searchType, keyword);
                 model.addAttribute("docList", pageInfo.getList());
                 model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/rejectedOrRecalledList";
@@ -394,11 +404,13 @@ public class ElecApprovalController {
         @PreAuthorize("isAuthenticated()")
         @GetMapping("/approved")
         public String completedList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam(value = "searchType", required = false) String searchType,
+                        @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "page", defaultValue = "1") int page,
                         @RequestParam(value = "size", defaultValue = "15") int size) {
-                PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService.findAllApproved(userDetails.getUsername(),
+                PageInfo<DocumentRespDto> pageInfo = elecApprovalQueryService.findApproved(userDetails.getUsername(),
                                 page,
-                                size);
+                                size, searchType, keyword);
                 model.addAttribute("docList", pageInfo.getList());
                 model.addAttribute("pageInfo", pageInfo);
                 return "elecApproval/approvedList";

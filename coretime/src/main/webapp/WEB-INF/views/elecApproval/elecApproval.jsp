@@ -61,28 +61,28 @@
                 <div class="summary-card card-red" onclick="location.href='/elecApproval/my-turn'">
                     <div>
                         <div class="summary-title">결재 대기</div>
-                        <div class="summary-count">${empty pendingApprovals ? 0 : pendingApprovals.size()}</div>
+                        <div class="summary-count">${empty myTurn ? 0 : myTurn.total}</div>
                     </div>
                     <div style="font-size: 24px;">🔴</div>
                 </div>
                 <div class="summary-card card-blue" onclick="location.href='/elecApproval/pending-or-progress'">
                     <div>
                         <div class="summary-title">진행 중</div>
-                        <div class="summary-count">${empty myInProgressDocs ? 0 : myInProgressDocs.size()}</div>
+                        <div class="summary-count">${empty pendingOrInProgress ? 0 : pendingOrInProgress.total}</div>
                     </div>
                     <div style="font-size: 24px;">🔵</div>
                 </div>
                 <div class="summary-card card-yellow" onclick="location.href='/elecApproval/rejected-or-recalled'">
                     <div>
                         <div class="summary-title">반려 / 취소</div>
-                        <div class="summary-count">${empty myRejectedOrRecalledDocs ? 0 : myRejectedOrRecalledDocs.size()}</div>
+                        <div class="summary-count">${empty rejectedOrRecalled ? 0 : rejectedOrRecalled.total}</div>
                     </div>
                     <div style="font-size: 24px;">🟡</div>
                 </div>
                 <div class="summary-card card-green" onclick="location.href='/elecApproval/approved'">
                     <div>
                         <div class="summary-title">결재 완료</div>
-                        <div class="summary-count">${empty myApprovedDocs ? 0 : myApprovedDocs.size()}</div>
+                        <div class="summary-count">${empty approved ? 0 : approved.total}</div>
                     </div>
                     <div style="font-size: 24px;">🟢</div>
                 </div>
@@ -94,11 +94,11 @@
 
             <div class="widget">
                 <div class="widget-header">
-                    <h2>📥 나의 결재 대기 문서 <span style="font-size:12px; color:#dc3545; margin-left:5px;">(${empty pendingApprovals ? 0 : pendingApprovals.size()}건)</span></h2>
+                    <h2>📥 나의 결재 대기 문서 <span style="font-size:12px; color:#dc3545; margin-left:5px;">(${empty myTurn ? 0 : myTurn.total}건)</span></h2>
                     <a href="/elecApproval/my-turn" class="btn-more">더보기 +</a>
                 </div>
                 <c:choose>
-                    <c:when test="${not empty pendingApprovals}">
+                    <c:when test="${not empty myTurn.list}">
                         <table class="data-table">
                             <colgroup>
                                 <col width="8%"> <col width="*"> <col width="12%"> <col width="10%"> <col width="15%"> <col width="10%"> <col width="10%">
@@ -109,7 +109,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <c:forEach var="doc" items="${pendingApprovals}" end="4"> <%-- 최대 5개만 출력 --%>
+                                <c:forEach var="doc" items="${myTurn.list}" end="4"> <%-- 최대 5개만 출력 --%>
                                     <tr>
                                         <td>${doc.docId}</td>
                                         <td style="text-align: left; padding-left: 15px;">
@@ -135,7 +135,7 @@
                     <a href="/elecApproval/pending-or-progress" class="btn-more">더보기 +</a>
                 </div>
                 <c:choose>
-                    <c:when test="${not empty myInProgressDocs}">
+                    <c:when test="${not empty pendingOrInProgress.list}">
                         <table class="data-table">
                             <colgroup>
                                 <col width="8%"> <col width="*"> <col width="15%"> <col width="15%"> <col width="10%">
@@ -146,7 +146,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <c:forEach var="doc" items="${myInProgressDocs}" end="4">
+                                <c:forEach var="doc" items="${pendingOrInProgress.list}" end="4">
                                     <tr>
                                         <td>${doc.docId}</td>
                                         <td style="text-align: left; padding-left: 15px;">
@@ -171,10 +171,10 @@
                         <a href="/elecApproval/rejected-or-recalled" class="btn-more">더보기 +</a>
                     </div>
                     <c:choose>
-                        <c:when test="${not empty myRejectedOrRecalledDocs}">
+                        <c:when test="${not empty rejectedOrRecalled.list}">
                             <table class="data-table">
                                 <tbody>
-                                    <c:forEach var="doc" items="${myRejectedOrRecalledDocs}" end="2">
+                                    <c:forEach var="doc" items="${rejectedOrRecalled.list}" end="2">
                                         <tr>
                                             <td style="text-align: left;">
                                                 <a href="/elecApproval/detail/${doc.docId}">
@@ -199,10 +199,10 @@
                         <a href="/elecApproval/approved" class="btn-more">더보기 +</a>
                     </div>
                     <c:choose>
-                        <c:when test="${not empty myApprovedDocs}">
+                        <c:when test="${not empty approved.list}">
                             <table class="data-table">
                                 <tbody>
-                                    <c:forEach var="doc" items="${myApprovedDocs}" end="2">
+                                    <c:forEach var="doc" items="${approved.list}" end="2">
                                         <tr>
                                             <td style="text-align: left;">
                                                 <a href="/elecApproval/detail/${doc.docId}">${doc.title}</a>
