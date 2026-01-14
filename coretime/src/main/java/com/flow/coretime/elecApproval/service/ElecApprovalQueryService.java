@@ -11,6 +11,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +46,9 @@ public class ElecApprovalQueryService {
         return documentRespDto;
     }
 
+    @Cacheable(value = "myApprovalLines", key = "#p0")
     public List<MyLineResponseDto> findMyApprovalLines(String userId) {
+        log.info("Cache Miss - findMyApprovalLines DB 조회: {}", userId);
         return myApprovalLineMapper.findMyApprovalLines(userId);
     }
 

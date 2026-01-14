@@ -10,6 +10,8 @@ import com.flow.coretime.global.exception.UnauthorizedException;
 import com.flow.coretime.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -121,6 +123,7 @@ public class ElecApprovalCommandService {
         log.info("문서 및 결재선 삭제 완료 - 문서ID: {}", docId);
     }
 
+    @CacheEvict(value = "myApprovalLines", allEntries = true)
     public void saveMyApprovalLine(String userId, MyLineSaveDto myLineSaveDto) {
 
         MyApprovalLineEntity myApprovalLineEntity = MyApprovalLineEntity.builder()
