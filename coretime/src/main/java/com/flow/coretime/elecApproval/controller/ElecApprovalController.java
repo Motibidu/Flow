@@ -53,8 +53,6 @@ public class ElecApprovalController {
         @PreAuthorize("isAuthenticated()")
         @GetMapping
         public String showDashboard(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-                String currentUserId = userDetails.getUsername();
-
                 PageInfo<DocumentRespDto> myTurn = elecApprovalQueryService
                                 .findMyTurn(userDetails.getUsername(), 1, 5, null, null);
                 model.addAttribute("myTurn", myTurn);
@@ -66,7 +64,7 @@ public class ElecApprovalController {
 
                 PageInfo<DocumentRespDto> rejectedOrRecalled = elecApprovalQueryService
                                 .findRejectedOrRecalled(userDetails.getUsername(), 1, 5, null, null);
-                model.addAttribute("myRejectedOrRecalledDocs", rejectedOrRecalled);
+                model.addAttribute("rejectedOrRecalled", rejectedOrRecalled);
 
                 PageInfo<DocumentRespDto> approved = elecApprovalQueryService
                                 .findApproved(userDetails.getUsername(), 1, 5, null, null);

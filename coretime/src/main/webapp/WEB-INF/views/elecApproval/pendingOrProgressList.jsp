@@ -29,7 +29,7 @@
                                         </td>
                                         <td><fmt:formatDate value="${doc.draftDate}" pattern="yyyy-MM-dd HH:mm"/></td>
                                         <td>${doc.docType.displayName}</td>
-                                        <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                                        <td><span class="status-badge status-${doc.status}">${doc.status.displayName}</span></td>
                                     </tr>
                                 </c:forEach>
                             </c:when>

@@ -174,7 +174,7 @@
                         <c:when test="${not empty rejectedOrRecalled.list}">
                             <table class="data-table">
                                 <tbody>
-                                    <c:forEach var="doc" items="${rejectedOrRecalled.list}" end="2">
+                                    <c:forEach var="doc" items="${rejectedOrRecalled.list}" end="4">
                                         <tr>
                                             <td style="text-align: left;">
                                                 <a href="/elecApproval/detail/${doc.docId}">
@@ -226,17 +226,10 @@
     <script>
         function quickApprove(docId){
             if(!confirm("바로 승인하시겠습니까?")){ return; }
-            fetch("/elecApproval/approval/"+docId, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'APPROVED', comment: '바로 승인' })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("서버 오류");
-                return res.json();
-            })
-            .then(data => {
-                alert(data.message);
+      
+            axios.post("/elecApproval/approve/"+docId, {comment: '바로 승인'})
+            .then(res=>{
+                alert(res.data.message);
                 window.location.reload();
             })
             .catch(err => alert('오류 발생: ' + err.message));
