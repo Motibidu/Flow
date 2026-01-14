@@ -57,11 +57,11 @@ public class ElecApprovalController {
 
                 PageInfo<DocumentRespDto> myTurn = elecApprovalQueryService
                                 .findMyTurn(userDetails.getUsername(), 1, 5, null, null);
-                log.info("myTurn: {}", myTurn);
                 model.addAttribute("myTurn", myTurn);
 
                 PageInfo<DocumentRespDto> pendingOrInProgress = elecApprovalQueryService
                                 .findPendingOrInProgress(userDetails.getUsername(), 1, 5, null, null);
+                log.info("pendingOrInProgress: {}", pendingOrInProgress);
                 model.addAttribute("pendingOrInProgress", pendingOrInProgress);
 
                 PageInfo<DocumentRespDto> rejectedOrRecalled = elecApprovalQueryService
@@ -78,7 +78,7 @@ public class ElecApprovalController {
         // 전자결재 작성 페이지
         @PreAuthorize("isAuthenticated()")
         @GetMapping("/documents")
-        public String showElecApprovalNew(@RequestParam("formType") String formType,
+        public String showDocumentForm(@RequestParam("formType") String formType,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
                 User currentUser = userService.findById(userDetails.getUsername()).orElseThrow(
                                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
@@ -114,8 +114,8 @@ public class ElecApprovalController {
         }
 
         // 전자결재 제출
-        @PreAuthorize("isAuthenticated()")
         @ResponseBody
+        @PreAuthorize("isAuthenticated()")
         @PostMapping("/documents")
         public ResponseEntity<ApiResponse<Void>> saveDocument(
                         @ModelAttribute DocumentReqDto request,
@@ -151,8 +151,8 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장/상신취소-> 상신
-        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @ResponseBody
+        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @PostMapping("/documents/{docId}")
         public ResponseEntity<ApiResponse<String>> redraftDocument(
                         @PathVariable("docId") int docId,
@@ -168,8 +168,8 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장
-        @PreAuthorize("isAuthenticated()")
         @ResponseBody
+        @PreAuthorize("isAuthenticated()")
         @PostMapping("/documents/temp")
         public ResponseEntity<ApiResponse<Void>> saveTempDocument(
                         @ModelAttribute DocumentReqDto request,
@@ -184,8 +184,8 @@ public class ElecApprovalController {
         }
 
         // 전자결재 임시저장 수정
-        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @ResponseBody
+        @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @PostMapping("/documents/temp/{docId}")
         public ResponseEntity<ApiResponse<Void>> updateTempDocument(
                         @ModelAttribute DocumentReqDto request,
@@ -208,7 +208,7 @@ public class ElecApprovalController {
         // 전자결재 상세 페이지
         @PreAuthorize("@documentChecker.isViewer(#p0, principal.username)")
         @GetMapping("/detail/{docId}")
-        public String detailElecApproval(@PathVariable("docId") int docId,
+        public String detailDocument(@PathVariable("docId") int docId,
                         @AuthenticationPrincipal UserDetails userDetails, Model model) {
 
                 DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
@@ -232,24 +232,30 @@ public class ElecApprovalController {
                 return "vacationRequestDetail";
         }
 
-        // 결재하기
-        @PreAuthorize("@documentChecker.isCurrentApprover(#p0, principal.username)")
         @ResponseBody
-        @PostMapping("/approval/{docId}")
-        public ResponseEntity<ApiResponse<Void>> approveOrRejectDocument(
+        @PreAuthorize("@documentChecker.isCurrentApprover(#p0, principal.username)")
+        @PostMapping("/approve/{docId}")
+        public ResponseEntity<ApiResponse<Void>> approveDocument(
                         @PathVariable("docId") int docId,
-                        @RequestBody ApprovalReq approvalReq,
+                        @RequestBody String comment,
                         @AuthenticationPrincipal UserDetails userDetails) {
 
-                ApprovalStatus approvalStatus = ApprovalStatus.fromString(approvalReq.getAction());
-                String comment = approvalReq.getComment();
+                elecApprovalCommandService.approveApproval(docId, comment);
 
-                approvalStatus.validateCommentWhenRejected(comment);
+                return ResponseEntity.ok(ApiResponse.success("결재가 승인되었습니다."));
+        }
 
-                elecApprovalCommandService.processApproval(docId, approvalStatus, comment);
+        @ResponseBody
+        @PreAuthorize("@documentChecker.isCurrentApprover(#p0, principal.username)")
+        @PostMapping("/reject/{docId}")
+        public ResponseEntity<ApiResponse<Void>> rejectDocument(
+                        @PathVariable("docId") int docId,
+                        @RequestBody String comment,
+                        @AuthenticationPrincipal UserDetails userDetails) {
 
-                String successMessage = (approvalStatus == ApprovalStatus.APPROVED) ? "결재가 승인되었습니다." : "결재가 반려되었습니다.";
-                return ResponseEntity.ok(ApiResponse.success(successMessage));
+                elecApprovalCommandService.rejectApproval(docId, comment);
+
+                return ResponseEntity.ok(ApiResponse.success("결재가 반려되었습니다."));
         }
 
         // 상신 취소하기
@@ -403,7 +409,7 @@ public class ElecApprovalController {
         // 승인된 문서 리스트
         @PreAuthorize("isAuthenticated()")
         @GetMapping("/approved")
-        public String completedList(Model model, @AuthenticationPrincipal UserDetails userDetails,
+        public String approvedList(Model model, @AuthenticationPrincipal UserDetails userDetails,
                         @RequestParam(value = "searchType", required = false) String searchType,
                         @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "page", defaultValue = "1") int page,

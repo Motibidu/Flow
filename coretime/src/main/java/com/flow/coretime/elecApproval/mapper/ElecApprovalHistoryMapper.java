@@ -15,9 +15,9 @@ public interface ElecApprovalHistoryMapper {
 
         void updateApprovalHistory(ElecApprovalHistoryRespDto approvalHistory);
 
-        Optional<ElecApprovalHistoryRespDto> findCurrentPendingApproval(@Param("docId") int docId);
+        Optional<ElecApprovalHistoryRespDto> getCurrentApprovalHistory(@Param("docId") int docId);
 
-        Optional<ElecApprovalHistoryRespDto> findNextApprover(@Param("docId") int docId,
+        Optional<ElecApprovalHistoryRespDto> getNextApprovalHistory(@Param("docId") int docId,
                         @Param("currentOrder") int currentOrder);
 
         // 특정 문서의 모든 결재 이력 조회 메서드 추가

@@ -2,30 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalMapper">
-    <resultMap id="documentResultMap" type="com.flow.coretime.elecApproval.model.DocumentRespDto" >
+
+    <resultMap id="documentDetailResultMap" type="com.flow.coretime.elecApproval.model.DocumentRespDto">
         <id property="docId" column="doc_id"/>
-        <result property="docType" column="doc_type"/>
-        <result property="title" column="title"/>
-        <result property="status" column="status"/>
-        <result property="initiatorId" column="initiator_id"/>
-        <result property="draftDate" column="draft_date"/>
-        <result property="jsonContent" column="json_content"/>
-        <result property="updatedAt" column="updated_at"/>
-
-        <result property="initiatorName" column="initiator_name"/>
-        <result property="initiatorDepartment" column="initiator_department"/>
-        <result property="initiatorRank" column="initiator_rank"/>
-        <result property="currentApproverName" column="current_approver_name"/>
-    </resultMap>
-
-    <!-- 상세 조회용 ResultMap (첨부파일 자동 매핑) -->
-    <resultMap id="documentDetailResultMap" type="com.flow.coretime.elecApproval.model.DocumentRespDto" extends="documentResultMap">
         <collection property="attachments" column="doc_id" javaType="java.util.List" ofType="com.flow.coretime.elecApproval.model.AttachmentEntity" select="selectAttachmentsByDocId"/>
     </resultMap>
 
 
     <select id="selectDocumentById" resultMap="documentDetailResultMap">
-        SELECT 
+        SELECT
                 d.doc_id,
                 d.doc_type,
                 d.title,
@@ -44,7 +29,7 @@
         WHERE doc_id= #{docId}
     </select>
 
-    <insert id="insertDocument" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto" 
+    <insert id="insertDocument" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto"
         useGeneratedKeys="true" keyProperty="docId">
         INSERT INTO documents (
             doc_type,
@@ -58,14 +43,14 @@
             #{docType, jdbcType=VARCHAR},
             #{title, jdbcType=VARCHAR},
             #{status, jdbcType=VARCHAR},
-            NOW(), 
+            NOW(),
             #{jsonContent, jdbcType=LONGVARCHAR},
             NOW(),
             #{initiatorId, jdbcType=VARCHAR}
         )
     </insert>
 
-    <insert id="insertDocumentEntity" parameterType="com.flow.coretime.elecApproval.model.DocumentEntity" 
+    <insert id="insertDocumentEntity" parameterType="com.flow.coretime.elecApproval.model.DocumentEntity"
         useGeneratedKeys="true" keyProperty="docId">
         INSERT INTO documents (
             doc_type,
@@ -75,19 +60,19 @@
             draft_date,
             json_content,
             updated_at
-            
+
         ) VALUES (
             #{docType},
             #{title},
             #{status},
             #{initiatorId},
-            NOW(), 
+            NOW(),
             #{jsonContent},
             NOW()
         )
     </insert>
 
-    
+
 
 
     <update id="updateDocumentStatus" parameterType="com.flow.coretime.elecApproval.model.DocumentRespDto">
@@ -102,7 +87,7 @@
 
     <update id="recallDocument">
         UPDATE documents
-        SET 
+        SET
             status = 'RECALLED',
             updated_at = NOW()
         WHERE
@@ -112,17 +97,17 @@
     </update>
 
     <delete id="deletePendingHistory" parameterType="long">
-        DELETE FROM approval_history 
-        WHERE 
-            doc_id = #{docId} 
+        DELETE FROM approval_history
+        WHERE
+            doc_id = #{docId}
             AND approval_status = 'PENDING'
     </delete>
-    
+
     <delete id="deleteAttachmentsByDocId">
         DELETE FROM attachment WHERE doc_id = #{docId}
     </delete>
-    
-    <select id="selectDocumentsToApprove" resultMap="documentResultMap">
+
+    <select id="selectDocumentsToApprove" resultType="com.flow.coretime.elecApproval.model.DocumentRespDto">
         SELECT
             d.doc_id,
             d.doc_type,
@@ -132,14 +117,14 @@
             d.draft_date,
             d.json_content,
             d.updated_at,
-            u_initiator.name AS initiator_name,         
-            u_initiator.department AS initiator_department 
+            u_initiator.name AS initiator_name,
+            u_initiator.department AS initiator_department
         FROM
             documents d
         JOIN
-            approval_history ah ON d.doc_id = ah.doc_id 
+            approval_history ah ON d.doc_id = ah.doc_id
         JOIN
-            users u_initiator ON d.initiator_id = u_initiator.id 
+            users u_initiator ON d.initiator_id = u_initiator.id
         WHERE
             ah.approver_id = #{approverId}
             AND ah.approval_status = 'PENDING'
@@ -147,7 +132,7 @@
             d.draft_date DESC
     </select>
 
-    <select id="selectRejectedOrRecalledDocuments" resultMap="documentResultMap">
+    <select id="selectRejectedOrRecalledDocuments" resultType="com.flow.coretime.elecApproval.model.DocumentRespDto">
     SELECT
         d.doc_id,
         d.doc_type,
@@ -162,7 +147,7 @@
         u.department AS initiator_department
     FROM
         documents d
-    LEFT JOIN 
+    LEFT JOIN
         users u ON d.initiator_id = u.id
     WHERE
         d.initiator_id = #{initiatorId}
@@ -171,7 +156,7 @@
         d.updated_at DESC
 </select>
 
-    <select id="selectInProgressDocumentsByInitiatorId" resultMap="documentResultMap">
+    <select id="selectInProgressDocumentsByInitiatorId" resultType="com.flow.coretime.elecApproval.model.DocumentRespDto">
         SELECT
             d.doc_id,
             d.doc_type,
@@ -185,7 +170,7 @@
             documents d
         WHERE
             d.initiator_id = #{initiatorId}
-            AND d.status IN ('PENDING', 'IN_PROGRESS') 
+            AND d.status IN ('PENDING', 'IN_PROGRESS')
         ORDER BY
             d.draft_date ASC
     </select>
@@ -227,7 +212,7 @@
 
     </update>
 
-    <select id="selectApprovedDocumentsByInitiatorId" resultMap="documentResultMap">
+    <select id="selectApprovedDocumentsByInitiatorId" resultType="com.flow.coretime.elecApproval.model.DocumentRespDto">
         SELECT
             d.doc_id,
             d.doc_type,
@@ -254,16 +239,16 @@
 
     <insert id="insertAttachment" parameterType="com.flow.coretime.elecApproval.model.AttachmentEntity">
         INSERT INTO attachment (
-            doc_id, 
-            origin_name, 
-            saved_name, 
-            file_path, 
+            doc_id,
+            origin_name,
+            saved_name,
+            file_path,
             file_size
         ) VALUES (
-            #{docId}, 
-            #{originName}, 
-            #{savedName}, 
-            #{filePath}, 
+            #{docId},
+            #{originName},
+            #{savedName},
+            #{filePath},
             #{fileSize}
         )
     </insert>
@@ -288,7 +273,7 @@
     </select>
 
     <select id="selectAllPendingOrInProgress" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT 
+        SELECT
                 d.doc_id,
                 d.doc_type,
                 d.title,
@@ -301,18 +286,18 @@
                 u.name AS initiator_name,
                 u.department AS initiator_department,
                 u.rank_name AS initiator_rank
-        FROM 
+        FROM
             documents d
         JOIN
             users u ON d.initiator_id = u.id
-        WHERE 
+        WHERE
             d.status IN ('PENDING', 'IN_PROGRESS')
             AND d.initiator_id = #{userId}
     </select>
 
 
     <select id="selectAllRejectedOrRecalled" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT 
+        SELECT
                 d.doc_id,
                 d.doc_type,
                 d.title,
@@ -325,17 +310,17 @@
                 u.name AS initiator_name,
                 u.department AS initiator_department,
                 u.rank_name AS initiator_rank
-        FROM 
+        FROM
             documents d
         JOIN
             users u ON d.initiator_id = u.id
-        WHERE 
+        WHERE
             d.status IN ('REJECTED', 'RECALLED')
             AND d.initiator_id = #{userId}
     </select>
 
     <select id="selectAllApproved" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT 
+        SELECT
                 d.doc_id,
                 d.doc_type,
                 d.title,
@@ -348,17 +333,17 @@
                 u.name AS initiator_name,
                 u.department AS initiator_department,
                 u.rank_name AS initiator_rank
-        FROM 
+        FROM
             documents d
         JOIN
             users u ON d.initiator_id = u.id
-        WHERE 
+        WHERE
             d.status IN ('APPROVED')
             AND d.initiator_id = #{userId}
     </select>
 
     <select id="selectAllTemp" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT 
+        SELECT
                 d.doc_id,
                 d.doc_type,
                 d.title,
@@ -371,17 +356,17 @@
                 u.name AS initiator_name,
                 u.department AS initiator_department,
                 u.rank_name AS initiator_rank
-        FROM 
+        FROM
             documents d
         JOIN
             users u ON d.initiator_id = u.id
-        WHERE 
+        WHERE
             d.status IN ('TEMP')
             AND d.initiator_id = #{userId}
     </select>
 
     <select id="selectAllMyTurn" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT 
+        SELECT
                 d.doc_id,
                 d.doc_type,
                 d.title,
@@ -394,16 +379,16 @@
                 u.name AS initiator_name,
                 u.department AS initiator_department,
                 u.rank_name AS initiator_rank
-        FROM 
+        FROM
             documents d
         JOIN
             approval_history ah ON d.doc_id = ah.doc_id
         JOIN
             users u ON d.initiator_id = u.id
-        WHERE 
+        WHERE
             ah.approver_id = #{userId}
             AND ah.approval_status = 'PENDING'
-            AND d.initiator_id = #{userId}
+            AND d.status IN ('PENDING', 'IN_PROGRESS')
     </select>
 
     <select id= "selectByStatusAndKeyword" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">

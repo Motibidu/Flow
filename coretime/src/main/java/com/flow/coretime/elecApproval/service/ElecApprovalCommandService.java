@@ -36,67 +36,6 @@ public class ElecApprovalCommandService {
     private final AttachmentService attachmentService;
     private final ElecApprovalQueryService elecApprovalQueryService; // To get document for auth check
 
-    public void processApproval(int docId, ApprovalStatus approvalStatus, String comment) {
-
-        // 1. 문서 조회
-        DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
-
-        // 2. 현재 결재자 조회
-        ElecApprovalHistoryRespDto currentPendingApproval = elecApprovalHistoryMapper
-                .findCurrentPendingApproval(docId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "현재 결재 대기 중인 상태가 아닙니다."));
-
-        // 3. 결재 또는 반려
-        currentPendingApproval.setApprovalStatus(approvalStatus);
-        currentPendingApproval.setCommentText(comment);
-        currentPendingApproval.setActionDate(new Date()); // 실제 결재 시점 기록
-        elecApprovalHistoryMapper.updateApprovalHistory(currentPendingApproval);
-
-        // 4. '결재'인 경우
-        if (ApprovalStatus.APPROVED.equals(approvalStatus)) {
-            Optional<ElecApprovalHistoryRespDto> nextApprovalHistoryOpt = elecApprovalHistoryMapper
-                    .findNextApprover(
-                            docId, currentPendingApproval.getApprovalOrder());
-            // 4-1. 다음 결재자가 있는 경우: 상태를 PENDING으로 활성화
-            if (nextApprovalHistoryOpt.isPresent()) {
-
-                ElecApprovalHistoryRespDto nextApprovalHistory = nextApprovalHistoryOpt.get();
-                nextApprovalHistory.setApprovalStatus(ApprovalStatus.PENDING);
-                nextApprovalHistory.setCommentText(null);
-                nextApprovalHistory.setActionDate(null);
-                elecApprovalHistoryMapper.updateApprovalHistory(nextApprovalHistory);
-
-                document.setStatus(DocumentStatus.IN_PROGRESS);
-
-                notificationService.send(nextApprovalHistory.getApproverId(), document.getTitle(),
-                        "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
-                        "/elecApproval/detail/" + document.getDocId());
-                // 4-2. 더 이상 결재자가 없는 경우: 최종 승인 완료
-            } else {
-
-                document.setStatus(DocumentStatus.APPROVED);
-
-                notificationService.send(document.getInitiatorId(), document.getTitle(),
-                        "결재 완료: '" + document.getDocType() + "' 문서가 최종 승인되었습니다! 🎉",
-                        "/elecApproval/detail/" + document.getDocId());
-            }
-            // 5. 반려인 경우: 문서 상태 변경 및 이후 결재선은 무시됨
-        } else if (ApprovalStatus.REJECTED.equals(approvalStatus)) {
-
-            document.setStatus(DocumentStatus.REJECTED);
-
-            notificationService.send(document.getInitiatorId(), document.getTitle(),
-                    "결재 반려: '" + document.getDocType() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
-                    "/elecApproval/detail/" + document.getDocId());
-        }
-
-        // 5. 문서 최종 상태 반영
-        document.setUpdatedAt(new Date());
-        elecApprovalMapper.updateDocumentStatus(document);
-
-    }
-
     public void recallDocument(Long docId, String userId) {
         elecApprovalMapper.recallDocument(docId, userId);
     }
@@ -292,5 +231,64 @@ public class ElecApprovalCommandService {
             }
             elecApprovalHistoryMapper.insertApprovalHistoryEntities(histories);
         }
+    }
+
+    @Transactional
+    public void approveApproval(int docId, String comment) {
+
+        // 1. 현재 결재차례 조회
+        ElecApprovalHistoryRespDto currentApprovalHistory = elecApprovalHistoryMapper
+                .getCurrentApprovalHistory(docId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "현재 결재 대기 중인 상태가 아닙니다."));
+
+        // 2. 결재 업데이트
+        currentApprovalHistory.setApprovalStatus(ApprovalStatus.APPROVED);
+        currentApprovalHistory.setComments(comment);
+        currentApprovalHistory.setActionDate(new Date());
+        elecApprovalHistoryMapper.updateApprovalHistory(currentApprovalHistory);
+
+        // 3. 문서 조회
+        DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+
+        // 4. 다음 결재차례, 및 문서상태 업데이트
+        elecApprovalHistoryMapper.getNextApprovalHistory(docId, currentApprovalHistory.getApprovalOrder())
+                .ifPresentOrElse(
+                        nextApproval -> {
+                            // 1. 다음 결재자가 있는 경우
+                            nextApproval.setApprovalStatus(ApprovalStatus.PENDING);
+                            nextApproval.setComments(comment);
+                            nextApproval.setActionDate(new Date());
+                            elecApprovalHistoryMapper.updateApprovalHistory(nextApproval);
+
+                            document.setStatus(DocumentStatus.IN_PROGRESS);
+                            notificationService.send(nextApproval.getApproverId(), document.getTitle(),
+                                    "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
+                                    "/elecApproval/detail/" + document.getDocId());
+                        }, () -> {
+                            // 2. 다음 결재자가 없는 경우
+                            document.setStatus(DocumentStatus.APPROVED);
+                            notificationService.send(document.getInitiatorId(), document.getTitle(),
+                                    "결재 완료: '" + document.getDocType().getDisplayName() + "' 문서가 최종 승인되었습니다! 🎉",
+                                    "/elecApproval/detail/" + document.getDocId());
+                        });
+
+        // 5. 문서 최종 상태 반영
+        document.setUpdatedAt(new Date());
+        elecApprovalMapper.updateDocumentStatus(document);
+    }
+
+    @Transactional
+    public void rejectApproval(int docId, String comment) {
+        DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+
+        document.setStatus(DocumentStatus.REJECTED);
+        document.setUpdatedAt(new Date());
+
+        elecApprovalMapper.updateDocumentStatus(document);
+
+        notificationService.send(document.getInitiatorId(), document.getTitle(),
+                "결재 반려: '" + document.getDocType().getDisplayName() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
+                "/elecApproval/detail/" + document.getDocId());
     }
 }

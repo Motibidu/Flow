@@ -108,7 +108,7 @@ public class ElecApprovalService {
         // 문서의 현재 PENDING 상태 결재자 ID 조회
         public String getCurrentApproverIdForDocument(int docId) {
                 Optional<ElecApprovalHistoryRespDto> currentPendingApproval = elecApprovalHistoryMapper
-                                .findCurrentPendingApproval(docId);
+                                .getCurrentApprovalHistory(docId);
                 return currentPendingApproval.map(ElecApprovalHistoryRespDto::getApproverId).orElse(null);
         }
 
@@ -127,7 +127,7 @@ public class ElecApprovalService {
 
                 // 2. 현재 결재자 조회
                 ElecApprovalHistoryRespDto currentPendingApproval = elecApprovalHistoryMapper
-                                .findCurrentPendingApproval(docId)
+                                .getCurrentApprovalHistory(docId)
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                                 "현재 결재 대기 중인 상태가 아닙니다."));
 
@@ -138,21 +138,21 @@ public class ElecApprovalService {
 
                 // 3. 결재 또는 반려
                 currentPendingApproval.setApprovalStatus(approvalStatus);
-                currentPendingApproval.setCommentText(comment);
+                currentPendingApproval.setComments(comment);
                 currentPendingApproval.setActionDate(new Date()); // 실제 결재 시점 기록
                 elecApprovalHistoryMapper.updateApprovalHistory(currentPendingApproval);
 
                 // 4. '결재'인 경우
                 if (ApprovalStatus.APPROVED.equals(approvalStatus)) {
                         Optional<ElecApprovalHistoryRespDto> nextApprovalHistoryOpt = elecApprovalHistoryMapper
-                                        .findNextApprover(
+                                        .getNextApprovalHistory(
                                                         docId, currentPendingApproval.getApprovalOrder());
                         // 4-1. 다음 결재자가 있는 경우: 상태를 PENDING으로 활성화
                         if (nextApprovalHistoryOpt.isPresent()) {
 
                                 ElecApprovalHistoryRespDto nextApprovalHistory = nextApprovalHistoryOpt.get();
                                 nextApprovalHistory.setApprovalStatus(ApprovalStatus.PENDING);
-                                nextApprovalHistory.setCommentText(null);
+                                nextApprovalHistory.setComments(null);
                                 nextApprovalHistory.setActionDate(null);
                                 elecApprovalHistoryMapper.updateApprovalHistory(nextApprovalHistory);
 

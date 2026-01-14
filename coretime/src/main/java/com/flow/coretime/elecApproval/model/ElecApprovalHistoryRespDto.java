@@ -22,7 +22,7 @@ public class ElecApprovalHistoryRespDto {
         private String approverId;
         private ApprovalStatus approvalStatus;
         private int approvalOrder;
-        private String commentText;
+        private String comments;
 
         // 승인 또는 반려가 처리된 시점
         private Date actionDate;

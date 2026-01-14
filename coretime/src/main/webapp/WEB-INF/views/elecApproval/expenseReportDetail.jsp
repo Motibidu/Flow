@@ -205,8 +205,9 @@
                 if (action === 'REJECTED' && !comment.trim()) { alert('반려 사유 입력 필수'); return; }
                 if(!confirm(action === 'APPROVED' ? "승인하시겠습니까?" : "반려하시겠습니까?")) return;
 
-                axios.post("/elecApproval/approval/${document.docId}", { action: action, comment: comment })
-                    .then(res => { alert(res.data.message); location.href = "/elecApproval"; })
+                const url = action === 'APPROVED' ? "/elecApproval/approve/${document.docId}" : "/elecApproval/reject/${document.docId}";
+                axios.post(url, { comment: comment })
+                    .then(res => { alert(res.data.message); location.href = "/elecApproval/detail/"+ ${document.docId}; })
                     .catch(err => alert("오류 발생"));
             }
             

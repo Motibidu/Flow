@@ -3,18 +3,6 @@
 
 <mapper namespace="com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper">
 
-    <resultMap id="approvalHistoryResultMap" type="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto">
-        <id property="historyId" column="history_id"/>
-        <result property="docId" column="doc_id"/>
-        <result property="approverId" column="approver_id"/>
-        <result property="approvalOrder" column="approval_order"/> 
-        <result property="approvalStatus" column="approval_status"/>
-        <result property="commentText" column="comments"/>    
-        <result property="actionDate" column="action_date"/>     
-        <result property="approverName" column="approver_name"/>
-        <result property="approverRank" column="approver_rank"/>
-    </resultMap>
-
     <insert id="insertApprovalHistory" parameterType="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto"
         useGeneratedKeys="true" keyProperty="historyId">
         INSERT INTO approval_history (
@@ -28,7 +16,7 @@
             #{docId},
             #{approverId},
             #{approvalStatus},
-            #{commentText}, NOW(),
+            #{comments}, NOW(),
             #{approvalOrder} )
     </insert>
 
@@ -75,13 +63,13 @@
         UPDATE approval_history
         SET
             approval_status = #{approvalStatus},
-            comments = #{commentText}, 
+            comments = #{comments}, 
             action_date = #{actionDate}
         WHERE
             history_id = #{historyId}
     </update>
 
-    <select id="findCurrentPendingApproval" resultMap="approvalHistoryResultMap">
+    <select id="getCurrentApprovalHistory" resultType="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto">
         SELECT
             history_id,
             doc_id,
@@ -100,7 +88,7 @@
         LIMIT 1 
     </select>
 
-    <select id="findNextApprover" resultMap="approvalHistoryResultMap">
+    <select id="getNextApprovalHistory" resultType="com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto">
         SELECT
             AH.history_id,
             AH.doc_id,
@@ -110,7 +98,8 @@
             AH.comments,
             AH.action_date,
             U.name AS approver_name,
-            U.rank_name AS approver_rank FROM
+            U.rank_name AS approver_rank 
+        FROM
             approval_history AH
         JOIN
             users U ON AH.approver_id = U.id

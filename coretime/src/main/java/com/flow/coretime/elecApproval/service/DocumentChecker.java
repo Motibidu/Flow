@@ -31,7 +31,7 @@ public class DocumentChecker {
     // 현재 사용자가 문서의 현재 결재자인지 확인
     public boolean isCurrentApprover(Integer docId, String username) {
         ElecApprovalHistoryRespDto currentPendingApproval = elecApprovalHistoryMapper
-                .findCurrentPendingApproval(docId)
+                .getCurrentApprovalHistory(docId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 결재 대기 중인 상태가 아닙니다."));
         return currentPendingApproval.getApproverId().equals(username);
     }
