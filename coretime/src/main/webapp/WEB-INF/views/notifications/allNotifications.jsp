@@ -37,7 +37,6 @@
     </div>
 
     <script>
-        // 서버에서 넘겨주는 유저 ID (JSP EL 사용)
         const currentUserId = "${currentUserId}";
 
         document.addEventListener("DOMContentLoaded", function() {
@@ -49,23 +48,26 @@
             fetch('/api/notifications/all-notifications?userId=' + currentUserId + '&page=' + page + '&size=15')
                 .then(res => res.json())
                 .then(data => {
-                    console.log("data: ", data);
+                    console.log("API Response:", data);
+
+                    // 응답이 { list: ... } 형태인지 { data: { list: ... } } 형태인지 확인하여 처리
+                    const pageInfo = (data.list) ? data : (data.data || {});
+                    const list = pageInfo.list || [];
+
                     const container = document.getElementById('all-notif-list');
                     container.innerHTML = '';
 
-                    // data.list는 PageHelper가 반환하는 실제 데이터 리스트입니다.
-                    if (!data.list || data.list.length === 0) {
+                    if (list.length === 0) {
                         container.innerHTML = '<div class="text-center p-5 text-muted">알림 내역이 없습니다.</div>';
                         return;
                     }
 
-                    data.list.forEach(item => {
+                    list.forEach(item => {
                         const div = document.createElement('div');
                         const isUnread = item.isRead === 'UNREAD';
                         
                         div.className = 'list-group-item ' + (isUnread ? 'unread' : '');
                         
-                        // JSP EL 충돌 방지를 위해 백틱(`) 대신 문자열 더하기 사용 (가장 안전)
                         let html = '<div class="d-flex justify-content-between">' +
                                    '  <div>' +
                                    (isUnread ? '    <span class="unread-dot"></span>' : '') +
@@ -83,7 +85,7 @@
                     });
 
                     // 페이징 버튼 렌더링
-                    renderPagination(data);
+                    renderPagination(pageInfo);
                 })
                 .catch(err => {
                     console.error("데이터 로드 실패:", err);

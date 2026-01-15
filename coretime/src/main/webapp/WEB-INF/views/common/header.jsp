@@ -22,7 +22,6 @@
             // 2. 서버에서 보낸 'notification' 이벤트 수신
             eventSource.addEventListener("notification", function(event) {
                 const data = JSON.parse(event.data);
-                console.log("data: ", data);
                 showToast(data.notifId, data.message, data.targetUrl);
 
                 const badge = document.getElementById('notif-badge');
@@ -33,9 +32,13 @@
                 }
             });
 
+
+
             eventSource.addEventListener("connect", function(event) {
                 console.log("SSE 연결 성공");
             });
+
+            
 
             eventSource.onerror = function(error) {
                 console.error("SSE 연결 에러:", error);
@@ -66,18 +69,21 @@
     // 3. 서버에서 알림 목록 가져오기
     function loadNotifications() {
         if (!userId) return;
+
         
         fetch('/api/notifications/recent-notifications?userId=' + userId)
             .then(res => res.json())
             .then(data => {
+                console.log(data);
+
                 listContainer.innerHTML = ''; 
                 
-                if (data.length === 0) {
+                if (data.data.length === 0) {
                     listContainer.innerHTML = '<div class="notif-empty">알림이 없습니다.</div>';
                     return;
                 }
 
-                data.forEach(item => {
+                data.data.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'notif-item' + (item.isRead === 'UNREAD' ? ' unread' : '');
                     div.innerHTML = 
@@ -171,7 +177,7 @@
     }
 </script>
 <style>
-        .header {
+    .header {
 		width: 100%;
 		height: 80px; /* 고정 높이 */
 		display: flex;
