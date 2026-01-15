@@ -22,6 +22,14 @@ public class GlobalExceptionHandler {
                                 .body(ApiResponse.error("잘못된 요청입니다: " + e.getMessage()));
         }
 
+        @ExceptionHandler(IllegalStateException.class)
+        public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException e) {
+                log.warn("잘못된 상태입니다: {}", e.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(ApiResponse.error("잘못된 상태입니다: " + e.getMessage()));
+        }
+
         @ExceptionHandler(NoHandlerFoundException.class)
         public ResponseEntity<ApiResponse<Void>> handle404(NoHandlerFoundException e) {
                 // ★ 에러(ERROR)가 아니라 경고(WARN)로 로그를 남김 (스택트레이스 제외)
@@ -38,6 +46,14 @@ public class GlobalExceptionHandler {
                 return ResponseEntity
                                 .status(HttpStatus.FORBIDDEN)
                                 .body(ApiResponse.error("접근 권한이 없습니다."));
+        }
+
+        @ExceptionHandler(com.flow.coretime.global.exception.UnauthorizedException.class)
+        public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(com.flow.coretime.global.exception.UnauthorizedException e) {
+                log.warn("권한이 없습니다: {}", e.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.FORBIDDEN)
+                                .body(ApiResponse.error("권한이 없습니다: " + e.getMessage()));
         }
 
         @ExceptionHandler(Exception.class)

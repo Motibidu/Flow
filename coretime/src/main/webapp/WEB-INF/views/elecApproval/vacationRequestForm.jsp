@@ -85,7 +85,7 @@
                     <th>문서제목</th>
                     <td colspan="3">
                         <input type="text" name="title" id="title" class="form-control" 
-                               placeholder="예: [휴가신청] 00팀 000 연차 신청의 건" required 
+                               placeholder="예: [휴가신청] 00팀 000 연차 신청의 건"
                                value="${empty document ? '[휴가신청] '.concat(currentUserName).concat(' 연차 신청의 건') : document.title}">
                     </td>
                 </tr>
@@ -97,7 +97,7 @@
                     <tr>
                         <th>휴가 종류</th>
                         <td>
-                            <select name="vacationType" id="vacationType" class="form-control" required>
+                            <select name="vacationType" id="vacationType" class="form-control">
                                 <option value="">-- 선택하세요 --</option>
                                 <option value="연차">연차</option>
                                 <option value="반차">반차</option>
@@ -111,9 +111,9 @@
                         <th>신청 기간</th>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="date" name="startDate" id="startDate" class="form-control" style="flex: 1;" required>
+                                <input type="date" name="startDate" id="startDate" class="form-control" style="flex: 1;" >
                                 <span>~</span>
-                                <input type="date" name="endDate" id="endDate" class="form-control" style="flex: 1;" required>
+                                <input type="date" name="endDate" id="endDate" class="form-control" style="flex: 1;" >
                             </div>
                         </td>
                     </tr>
@@ -590,7 +590,7 @@
     document.getElementById('vacationForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        if (!validateFiles()) return;
+        //if (!validateFiles()) return;
 
         if (selectedApprovers.length === 0) {
             alert("최소 1명 이상의 결재자를 지정해야 합니다.");

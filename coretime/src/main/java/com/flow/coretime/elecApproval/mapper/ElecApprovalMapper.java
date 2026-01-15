@@ -34,7 +34,7 @@ public interface ElecApprovalMapper {
         void insertAttachment(AttachmentEntity attachment);
 
         // update
-        void updateDocumentStatus(DocumentRespDto document);
+        int updateDocumentStatus(DocumentRespDto document);
 
         int updateDocumentForRedraft(DocumentRespDto attachment);
 
@@ -44,7 +44,7 @@ public interface ElecApprovalMapper {
         void deletePendingHistory(Long docId);
 
         // etc
-        int recallDocument(@Param("docId") Long docId, @Param("userId") String userId);
+        int recallDocument(@Param("docId") int docId, @Param("userId") String userId, @Param("version") int version);
 
         List<AttachmentEntity> selectAttachmentsByDocId(@Param("docId") int docId);
 

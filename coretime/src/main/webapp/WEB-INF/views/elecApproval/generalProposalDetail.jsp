@@ -187,7 +187,7 @@
                 const url = action === 'APPROVED' ? "/elecApproval/approve/${document.docId}" : "/elecApproval/reject/${document.docId}";
                 axios.post(url, { comment: comment })
                     .then(res => { alert(res.data.message); location.href = "/elecApproval/detail/"+ ${document.docId}; })
-                    .catch(err => alert("오류 발생"));
+                    .catch(err => alert(err.response.data.message));
             }
             
             function recallDocument(docId) { 

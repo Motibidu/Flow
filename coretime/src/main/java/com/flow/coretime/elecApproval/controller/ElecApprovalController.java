@@ -260,7 +260,7 @@ public class ElecApprovalController {
         @PreAuthorize("@documentChecker.isInitiator(#p0, principal.username)")
         @PostMapping("/recall/{docId}")
         @ResponseBody
-        public ResponseEntity<ApiResponse<Void>> recall(@PathVariable(name = "docId") Long docId,
+        public ResponseEntity<ApiResponse<Void>> recall(@PathVariable(name = "docId") int docId,
                         @AuthenticationPrincipal UserDetails userDetails) {
                 elecApprovalCommandService.recallDocument(docId, userDetails.getUsername());
                 return ResponseEntity.ok(ApiResponse.success("상신 취소가 성공적으로 완료되었습니다."));

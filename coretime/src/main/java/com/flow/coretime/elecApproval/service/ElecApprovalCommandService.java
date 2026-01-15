@@ -36,8 +36,17 @@ public class ElecApprovalCommandService {
     private final AttachmentService attachmentService;
     private final ElecApprovalQueryService elecApprovalQueryService; // To get document for auth check
 
-    public void recallDocument(Long docId, String userId) {
-        elecApprovalMapper.recallDocument(docId, userId);
+    public void recallDocument(int docId, String userId) {
+        DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+        log.info("document: {}", document);
+
+        validateDocumentIsPendingOrInProgress(document);
+
+        int updatedRows = elecApprovalMapper.recallDocument(document.getDocId(), userId, document.getVersion());
+
+        if (updatedRows == 0) {
+            throw new IllegalStateException("다른 사용자에 의해 문서가 변경되어 작업을 완료할 수 없습니다.");
+        }
     }
 
     public void deleteDocument(int docId) {
@@ -233,62 +242,86 @@ public class ElecApprovalCommandService {
         }
     }
 
+    // 문서의 결재상태와 결재선에 지정된 각 결재자의 결재상태를 업데이트 합니다.
     @Transactional
     public void approveApproval(int docId, String comment) {
 
-        // 1. 현재 결재차례 조회
+        // 1. 문서 상태 검증(PENDING, IN_PROGRESS 상태의 문서만 처리 가능, 취소상태라면 불가능)
+        DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+        log.info("document: {}", document);
+
+        validateDocumentIsPendingOrInProgress(document);
+
+        // 2. 현재 결재자의 결재상태 업데이트
         ElecApprovalHistoryRespDto currentApprovalHistory = elecApprovalHistoryMapper
                 .getCurrentApprovalHistory(docId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "현재 결재 대기 중인 상태가 아닙니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 결재 대기 중인 상태가 아닙니다."));
 
-        // 2. 결재 업데이트
         currentApprovalHistory.setApprovalStatus(ApprovalStatus.APPROVED);
         currentApprovalHistory.setComments(comment);
         currentApprovalHistory.setActionDate(new Date());
         elecApprovalHistoryMapper.updateApprovalHistory(currentApprovalHistory);
 
-        // 3. 문서 조회
-        DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
-
-        // 4. 다음 결재차례, 및 문서상태 업데이트
-        elecApprovalHistoryMapper.getNextApprovalHistory(docId, currentApprovalHistory.getApprovalOrder())
+        // 3. 문서 상태 업데이트
+        elecApprovalHistoryMapper.getNextApprovalHistory(docId, currentApprovalHistory.getApprovalOrder() + 1)
                 .ifPresentOrElse(
                         nextApproval -> {
-                            // 1. 다음 결재자가 있는 경우
+                            // 3-1. 다음 결재자가 있는 경우
                             nextApproval.setApprovalStatus(ApprovalStatus.PENDING);
-                            nextApproval.setComments(comment);
-                            nextApproval.setActionDate(new Date());
                             elecApprovalHistoryMapper.updateApprovalHistory(nextApproval);
-
                             document.setStatus(DocumentStatus.IN_PROGRESS);
+
+                            // 4. 다음 결재자에게 결재 대기 알림 전송
                             notificationService.send(nextApproval.getApproverId(), document.getTitle(),
                                     "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
                                     "/elecApproval/detail/" + document.getDocId());
-                        }, () -> {
-                            // 2. 다음 결재자가 없는 경우
+                        },
+                        () -> {
+                            // 3-2. 다음 결재자가 없는 경우 (최종 승인)
                             document.setStatus(DocumentStatus.APPROVED);
+
+                            // 4. 기안자에게 최종승인 알림 전송
                             notificationService.send(document.getInitiatorId(), document.getTitle(),
                                     "결재 완료: '" + document.getDocType().getDisplayName() + "' 문서가 최종 승인되었습니다! 🎉",
                                     "/elecApproval/detail/" + document.getDocId());
                         });
 
-        // 5. 문서 최종 상태 반영
         document.setUpdatedAt(new Date());
-        elecApprovalMapper.updateDocumentStatus(document);
+        int updatedRows = elecApprovalMapper.updateDocumentStatus(document);
     }
 
     @Transactional
     public void rejectApproval(int docId, String comment) {
+        // 1. 문서상태 검증
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+        validateDocumentIsPendingOrInProgress(document);
 
+        // 2. 현재 결재자의 결재상태 업데이트
+        ElecApprovalHistoryRespDto currentApprovalHistory = elecApprovalHistoryMapper
+                .getCurrentApprovalHistory(docId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 결재 대기 중인 상태가 아닙니다."));
+
+        currentApprovalHistory.setApprovalStatus(ApprovalStatus.REJECTED);
+        currentApprovalHistory.setComments(comment);
+        currentApprovalHistory.setActionDate(new Date());
+        elecApprovalHistoryMapper.updateApprovalHistory(currentApprovalHistory);
+
+        // 3. 문서 상태 업데이트
         document.setStatus(DocumentStatus.REJECTED);
         document.setUpdatedAt(new Date());
+        int updatedRows = elecApprovalMapper.updateDocumentStatus(document);
 
-        elecApprovalMapper.updateDocumentStatus(document);
-
+        // 4. 기안자에게 알림 전송
         notificationService.send(document.getInitiatorId(), document.getTitle(),
                 "결재 반려: '" + document.getDocType().getDisplayName() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
                 "/elecApproval/detail/" + document.getDocId());
+    }
+
+    private void validateDocumentIsPendingOrInProgress(DocumentRespDto document) {
+        DocumentStatus status = document.getStatus();
+        if (status != DocumentStatus.PENDING && status != DocumentStatus.IN_PROGRESS) {
+            throw new IllegalStateException(
+                    "문서가 이미 처리되었거나 취소되어 작업을 진행할 수 없습니다. (현재 상태: " + status.getDisplayName() + ")");
+        }
     }
 }
