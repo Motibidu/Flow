@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DocumentEntity {
         private int docId;
+        private int version;
         private DocumentType docType;
         private String title;
         private DocumentStatus status;

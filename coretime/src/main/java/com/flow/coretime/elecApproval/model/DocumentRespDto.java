@@ -15,6 +15,7 @@ import lombok.Data;
 public class DocumentRespDto {
         // 테이블 컬럼
         private int docId;
+        private int version;
 
         // jsp에서 가져옴
         private DocumentType docType;

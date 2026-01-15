@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -38,8 +39,6 @@ public class ElecApprovalCommandService {
 
     public void recallDocument(int docId, String userId) {
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
-        log.info("document: {}", document);
-
         validateDocumentIsPendingOrInProgress(document);
 
         int updatedRows = elecApprovalMapper.recallDocument(document.getDocId(), userId, document.getVersion());
@@ -53,10 +52,11 @@ public class ElecApprovalCommandService {
 
         // 1. 문서 정보 조회
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+        DocumentStatus status = document.getStatus();
 
-        // 3. 상태 체크: 상신취소(RECALLED) 상태일 때만 삭제 허용
-        if (!DocumentStatus.RECALLED.equals(document.getStatus())) {
-            throw new RuntimeException("상신취소 상태인 문서만 삭제가 가능합니다.");
+        // 3. 상태 체크: 임시저장(TEMP) 또는 상신취소(RECALLED) 상태일 때만 삭제 허용
+        if (status != DocumentStatus.TEMP && status != DocumentStatus.RECALLED) {
+            throw new IllegalStateException("임시저장 또는 상신취소 상태인 문서만 삭제가 가능합니다.");
         }
 
         // 4. 연관 데이터 삭제: 결재 이력(History)을 먼저 삭제해야 외래키 오류가 발생하지 않음
@@ -168,6 +168,14 @@ public class ElecApprovalCommandService {
     public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files,
             List<Long> deleteFileIds, String loginId) {
 
+        // 문서 가져오기
+        DocumentRespDto existingDocument = elecApprovalQueryService.getDocumentById(docId);
+
+        // 상태 체크: 임시저장(TEMP) 상태일 때만 수정 허용
+        if (existingDocument.getStatus() != DocumentStatus.TEMP) {
+            throw new IllegalStateException("임시 저장 상태의 문서만 수정할 수 있습니다.");
+        }
+
         // 문서 생성 및 업데이트
         DocumentEntity documentEntity = DocumentEntity.builder()
                 .docId(docId)
@@ -197,6 +205,12 @@ public class ElecApprovalCommandService {
             List<Long> deleteFileIds) {
         // 문서 가져오기
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
+        DocumentStatus status = document.getStatus();
+
+        // 상태 체크: 임시저장(TEMP), 상신취소(RECALLED), 또는 반려(REJECTED) 상태일 때만 재상신 가능
+        if (status != DocumentStatus.TEMP && status != DocumentStatus.RECALLED && status != DocumentStatus.REJECTED) {
+            throw new IllegalStateException("재상신할 수 없는 문서 상태입니다. (현재 상태: " + status.getDisplayName() + ")");
+        }
 
         // 문서 정보 업데이트 (제목, 내용, 상태 -> PENDING)
         document.setTitle(request.getTitle());
@@ -288,6 +302,9 @@ public class ElecApprovalCommandService {
 
         document.setUpdatedAt(new Date());
         int updatedRows = elecApprovalMapper.updateDocumentStatus(document);
+        if (updatedRows == 0) {
+            throw new IllegalStateException("다른 사용자에 의해 문서가 변경되어 작업을 완료할 수 없습니다.");
+        }
     }
 
     @Transactional
@@ -310,6 +327,9 @@ public class ElecApprovalCommandService {
         document.setStatus(DocumentStatus.REJECTED);
         document.setUpdatedAt(new Date());
         int updatedRows = elecApprovalMapper.updateDocumentStatus(document);
+        if (updatedRows == 0) {
+            throw new IllegalStateException("다른 사용자에 의해 문서가 변경되어 작업을 완료할 수 없습니다.");
+        }
 
         // 4. 기안자에게 알림 전송
         notificationService.send(document.getInitiatorId(), document.getTitle(),
