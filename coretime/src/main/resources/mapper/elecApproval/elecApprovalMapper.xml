@@ -369,30 +369,69 @@
             AND d.initiator_id = #{userId}
     </select>
 
-    <select id="selectAllMyTurn" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">
-        SELECT
-                d.doc_id,
-                d.doc_type,
-                d.title,
-                d.status,
-                d.initiator_id,
-                d.draft_date,
-                d.json_content,
-                d.updated_at,
-                u.id AS initiator_id,
-                u.name AS initiator_name,
-                u.department AS initiator_department,
-                u.rank_name AS initiator_rank
+    <select id="selectAllMyTurn" resultType="com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT DISTINCT
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at,
+            u.name AS initiator_name,
+            u.department AS initiator_department,
+            u.rank_name AS initiator_rank
         FROM
             documents d
         JOIN
             approval_history ah ON d.doc_id = ah.doc_id
         JOIN
             users u ON d.initiator_id = u.id
+        LEFT JOIN
+            substitute_approval sa
+                ON ah.approver_id = sa.delegator_id
+                AND sa.substitute_id = #{userId}
+                AND CURDATE() BETWEEN sa.start_date AND sa.end_date
         WHERE
-            ah.approver_id = #{userId}
+            (ah.approver_id = #{userId} OR sa.substitute_id IS NOT NULL)
             AND ah.approval_status = 'PENDING'
             AND d.status IN ('PENDING', 'IN_PROGRESS')
+        ORDER BY
+            d.draft_date DESC
+    </select>
+
+    <select id="selectMyTurnByKeyword" resultType="com.flow.coretime.elecApproval.model.DocumentRespDto">
+        SELECT DISTINCT
+            d.doc_id,
+            d.doc_type,
+            d.title,
+            d.status,
+            d.initiator_id,
+            d.draft_date,
+            d.json_content,
+            d.updated_at,
+            u.name AS initiator_name,
+            u.department AS initiator_department,
+            u.rank_name AS initiator_rank
+        FROM
+            documents d
+        JOIN
+            approval_history ah ON d.doc_id = ah.doc_id
+        JOIN
+            users u ON d.initiator_id = u.id
+        LEFT JOIN
+            substitute_approval sa
+                ON ah.approver_id = sa.delegator_id
+                AND sa.substitute_id = #{userId}
+                AND CURDATE() BETWEEN sa.start_date AND sa.end_date
+        WHERE
+            (ah.approver_id = #{userId} OR sa.substitute_id IS NOT NULL)
+            AND ah.approval_status = 'PENDING'
+            AND d.status IN ('PENDING', 'IN_PROGRESS')
+            AND d.${searchType} LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY
+            d.draft_date DESC
     </select>
 
     <select id= "selectByStatusAndKeyword" resultType= "com.flow.coretime.elecApproval.model.DocumentRespDto">

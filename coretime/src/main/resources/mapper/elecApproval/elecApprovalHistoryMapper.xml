@@ -65,6 +65,9 @@
             approval_status = #{approvalStatus},
             comments = #{comments}, 
             action_date = #{actionDate}
+            <if test="actingApproverId != null and actingApproverId != ''">
+                ,acting_approver_id = #{actingApproverId}
+            </if>
         WHERE
             history_id = #{historyId}
     </update>
@@ -125,14 +128,21 @@
             AH.approval_status,
             AH.comments,
             AH.action_date,
+            AH.acting_approver_id,
             U.name AS approver_name,
             U.rank_name AS approver_rank,
             U.position AS approver_position,
-            U.department AS approver_department
+            U.department AS approver_department,
+            AU.name AS acting_approver_name,
+            AU.rank_name AS acting_approver_rank,
+            AU.position AS acting_approver_position,
+            AU.department AS acting_approver_department
         FROM
             approval_history AH
         JOIN
             users U ON AH.approver_id = U.id
+        LEFT JOIN
+            users AU ON AH.acting_approver_id = AU.id
         WHERE
             AH.doc_id = #{docId}
         ORDER BY

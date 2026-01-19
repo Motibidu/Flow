@@ -64,6 +64,12 @@ public interface ElecApprovalMapper {
 
         void deleteAttachmentsByDocId(int docId);
 
+        List<DocumentRespDto> selectMyTurnByKeyword(
+            @Param("userId") String userId,
+            @Param("searchType") String searchType,
+            @Param("keyword") String keyword
+    );
+
         List<DocumentRespDto> selectByStatusAndKeyword(
                         @Param("userId") String userId,
                         @Param("statusList") List<DocumentStatus> statusList,

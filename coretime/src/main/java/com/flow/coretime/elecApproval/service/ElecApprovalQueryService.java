@@ -105,11 +105,7 @@ public class ElecApprovalQueryService {
             String keyword) {
         PageHelper.startPage(page, size);
         if (searchType != null && !searchType.isEmpty()) {
-            List<DocumentStatus> statusList = new ArrayList<>();
-            statusList.add(DocumentStatus.PENDING);
-            statusList.add(DocumentStatus.IN_PROGRESS);
-            List<DocumentRespDto> list = elecApprovalMapper.selectByStatusAndKeyword(username, statusList, searchType,
-                    keyword);
+            List<DocumentRespDto> list = elecApprovalMapper.selectMyTurnByKeyword(username, searchType, keyword);
             return new PageInfo<>(list);
         } else {
             List<DocumentRespDto> list = elecApprovalMapper.selectAllMyTurn(username);

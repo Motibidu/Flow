@@ -188,7 +188,9 @@
 
 	.header__logout{
 		margin-left: auto;
-		margin-right: 50px;		
+		margin-right: 50px;
+		display: flex;
+		align-items: center;
 	}
 
 	.header__logo{

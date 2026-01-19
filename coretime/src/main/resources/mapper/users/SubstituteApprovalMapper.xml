@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flow.coretime.users.mapper.SubstituteApprovalMapper">
+
+    <resultMap id="SubstituteApprovalResponseDtoMap" type="com.flow.coretime.users.model.SubstituteApprovalResponseDto">
+        <id property="id" column="id"/>
+        <result property="delegatorId" column="delegator_id"/>
+        <result property="substituteId" column="substitute_id"/>
+        <result property="substituteName" column="substitute_name"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+    </resultMap>
+
+    <select id="findByDelegatorId" resultMap="SubstituteApprovalResponseDtoMap">
+        SELECT
+            sa.id,
+            sa.delegator_id,
+            sa.substitute_id,
+            u.name AS substitute_name,
+            sa.start_date,
+            sa.end_date
+        FROM
+            SUBSTITUTE_APPROVAL sa
+        JOIN
+            USERS u ON sa.substitute_id = u.id
+        WHERE
+            sa.delegator_id = #{delegatorId}
+        ORDER BY
+            sa.start_date DESC
+    </select>
+
+    <insert id="insert" parameterType="com.flow.coretime.users.model.SubstituteApproval" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO SUBSTITUTE_APPROVAL (delegator_id, substitute_id, start_date, end_date)
+        VALUES (#{delegatorId}, #{substituteId}, #{startDate}, #{endDate})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM SUBSTITUTE_APPROVAL
+        WHERE id = #{id} AND delegator_id = #{delegatorId}
+    </delete>
+
+    <select id="findActiveSubstitute" resultType="com.flow.coretime.users.model.SubstituteApproval">
+        SELECT
+            id,
+            delegator_id,
+            substitute_id,
+            start_date,
+            end_date,
+            created_at
+        FROM
+            SUBSTITUTE_APPROVAL
+        WHERE
+            delegator_id = #{delegatorId}
+        AND
+            #{currentDate} BETWEEN start_date AND end_date
+        LIMIT 1
+    </select>
+
+</mapper>

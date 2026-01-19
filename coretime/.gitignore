@@ -37,5 +37,6 @@ out/
 .vscode/
 .metadata/
 src/main/webapp/resources/uploads/**
+src/test/**
 
 application-local.properties

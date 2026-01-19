@@ -235,10 +235,10 @@ public class ElecApprovalController {
         @PostMapping("/approve/{docId}")
         public ResponseEntity<ApiResponse<Void>> approveDocument(
                         @PathVariable("docId") int docId,
-                        @RequestBody String comment,
+                        @RequestBody ApprovalCommentDto approvalCommentDto,
                         @AuthenticationPrincipal UserDetails userDetails) {
 
-                elecApprovalCommandService.approveApproval(docId, comment);
+                elecApprovalCommandService.approveApproval(docId, approvalCommentDto.comment(), userDetails.getUsername());
 
                 return ResponseEntity.ok(ApiResponse.success("결재가 승인되었습니다."));
         }
@@ -248,12 +248,38 @@ public class ElecApprovalController {
         @PostMapping("/reject/{docId}")
         public ResponseEntity<ApiResponse<Void>> rejectDocument(
                         @PathVariable("docId") int docId,
-                        @RequestBody String comment,
+                        @RequestBody ApprovalCommentDto approvalCommentDto,
                         @AuthenticationPrincipal UserDetails userDetails) {
 
-                elecApprovalCommandService.rejectApproval(docId, comment);
+                elecApprovalCommandService.rejectApproval(docId, approvalCommentDto.comment(), userDetails.getUsername());
 
                 return ResponseEntity.ok(ApiResponse.success("결재가 반려되었습니다."));
+        }
+
+        @ResponseBody
+        @PreAuthorize("isAuthenticated()")
+        @PostMapping("/substitute-approve/{docId}")
+        public ResponseEntity<ApiResponse<Void>> substituteApproveDocument(
+                @PathVariable("docId") int docId,
+                @RequestBody ApprovalCommentDto approvalCommentDto,
+                @AuthenticationPrincipal UserDetails userDetails) {
+
+                elecApprovalCommandService.substituteApproveApproval(docId, approvalCommentDto.comment(), userDetails.getUsername());
+
+                return ResponseEntity.ok(ApiResponse.success("대리 결재가 승인되었습니다."));
+        }
+
+        @ResponseBody
+        @PreAuthorize("isAuthenticated()")
+        @PostMapping("/substitute-reject/{docId}")
+        public ResponseEntity<ApiResponse<Void>> substituteRejectDocument(
+                @PathVariable("docId") int docId,
+                @RequestBody ApprovalCommentDto approvalCommentDto,
+                @AuthenticationPrincipal UserDetails userDetails) {
+
+                elecApprovalCommandService.substituteRejectApproval(docId, approvalCommentDto.comment(), userDetails.getUsername());
+
+                return ResponseEntity.ok(ApiResponse.success("대리 결재가 반려되었습니다."));
         }
 
         // 상신 취소하기

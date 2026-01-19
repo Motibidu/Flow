@@ -31,11 +31,11 @@
 
     /* ----- 버튼 스타일 ----- */
     .action-buttons { margin-bottom: 20px; text-align: right; }
-    .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-    .btn-primary { background-color: #007bff; color: white; }
-    .btn-primary:hover { background-color: #0056b3; }
-    .btn-secondary { background-color: #6c757d; color: white; font-size: 11px; padding: 4px 8px; }
-    .btn-secondary:hover { background-color: #5a6268; }
+    .main .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+    .main .btn-primary { background-color: #007bff; color: white; }
+    .main .btn-primary:hover { background-color: #0056b3; }
+    .main .btn-secondary { background-color: #6c757d; color: white; font-size: 11px; padding: 4px 8px; }
+    .main .btn-secondary:hover { background-color: #5a6268; }
 
     /* ----- 테이블 스타일 ----- */
     .data-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }

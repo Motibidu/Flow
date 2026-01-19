@@ -21,5 +21,6 @@ public class ElecApprovalHistoryEntity {
         private String comments;
         private Date actionDate;
         private int approvalOrder;
+        private String actingApproverId; // 대리 결재자 ID
 
 }

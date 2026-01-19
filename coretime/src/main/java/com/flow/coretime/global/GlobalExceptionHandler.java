@@ -26,8 +26,8 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException e) {
                 log.warn("잘못된 상태입니다: {}", e.getMessage());
                 return ResponseEntity
-                                .status(HttpStatus.BAD_REQUEST)
-                                .body(ApiResponse.error("잘못된 상태입니다: " + e.getMessage()));
+                                .status(HttpStatus.CONFLICT)
+                                .body(ApiResponse.error("리소스 상태가 변경되었습니다: " + e.getMessage()));
         }
 
         @ExceptionHandler(NoHandlerFoundException.class)
@@ -41,7 +41,8 @@ public class GlobalExceptionHandler {
         }
 
         @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-        public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException e) {
+        public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
+                        org.springframework.security.access.AccessDeniedException e) {
                 log.warn("접근이 거부되었습니다: {}", e.getMessage());
                 return ResponseEntity
                                 .status(HttpStatus.FORBIDDEN)
@@ -49,7 +50,8 @@ public class GlobalExceptionHandler {
         }
 
         @ExceptionHandler(com.flow.coretime.global.exception.UnauthorizedException.class)
-        public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(com.flow.coretime.global.exception.UnauthorizedException e) {
+        public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(
+                        com.flow.coretime.global.exception.UnauthorizedException e) {
                 log.warn("권한이 없습니다: {}", e.getMessage());
                 return ResponseEntity
                                 .status(HttpStatus.FORBIDDEN)

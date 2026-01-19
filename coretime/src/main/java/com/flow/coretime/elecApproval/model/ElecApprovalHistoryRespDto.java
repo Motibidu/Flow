@@ -27,9 +27,18 @@ public class ElecApprovalHistoryRespDto {
         // 승인 또는 반려가 처리된 시점
         private Date actionDate;
 
+        // 대리 결재자 ID
+        private String actingApproverId;
+
         // 결재선 표시를 위한 추가 필드 (JOIN 또는 UserService 호출로 채워짐)
         private String approverName; // USERS.NAME
         private RankType approverRank; // USERS.RANK (User 모델에 rank 필드가 있다면)
         private PositionType approverPosition;
         private DepartmentType approverDepartment;
+
+        // 대리 결재자 정보 (JOIN 또는 UserService 호출로 채워짐)
+        private String actingApproverName;
+        private RankType actingApproverRank;
+        private PositionType actingApproverPosition;
+        private DepartmentType actingApproverDepartment;
 }

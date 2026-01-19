@@ -159,6 +159,19 @@
                 </div>
             </c:if>
 
+            <%-- 대리 결재 처리 영역 --%>
+            <%-- TODO: 대리 결재 가능 조건에 대한 구체적인 비즈니스 로직 적용 필요 --%>
+            <c:if test="${currentUser.id ne document.currentApproverId and currentUser.id ne document.initiatorId and (document.status eq 'PENDING' or document.status eq 'IN_PROGRESS')}">
+                <div class="approval-action-area">
+                    <h4>대리 결재 처리</h4>
+                    <textarea id="substituteApprovalComment" placeholder="대리 결재 의견을 입력해 주세요. (반려 시 사유 필수 입력)"></textarea>
+                    <div style="text-align: right; gap: 10px; display: flex; justify-content: flex-end; margin-top: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="submitSubstituteApproval('APPROVED')">대리 승인</button>
+                        <button type="button" class="btn btn-danger" onclick="submitSubstituteApproval('REJECTED')">대리 반려</button>
+                    </div>
+                </div>
+            </c:if>
+
             <div class="btn-group">
                 <button type="button" class="btn btn-outline" onclick="goBackToList()">목록으로</button>
 
@@ -208,12 +221,34 @@
                 const url = action === 'APPROVED' ? "/elecApproval/approve/${document.docId}" : "/elecApproval/reject/${document.docId}";
                 axios.post(url, { comment: comment })
                     .then(res => { alert(res.data.message); location.href = "/elecApproval/detail/"+ ${document.docId}; })
-                    .catch(err => alert(err.response.data.message));
+                    .catch(err => {
+                        const errorMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : "오류가 발생했습니다.";
+                        alert(errorMessage);
+                    });
+            }
+
+            // 대리 결재 승인/반려
+            function submitSubstituteApproval(action) {
+                const comment = document.getElementById('substituteApprovalComment').value;
+                if (action === 'REJECTED' && !comment.trim()) { alert('반려 사유 입력 필수'); return; }
+                if(!confirm(action === 'APPROVED' ? "대리 승인하시겠습니까?" : "대리 반려하시겠습니까?")) return;
+                const url = action === 'APPROVED' ? "/elecApproval/substitute-approve/${document.docId}" : "/elecApproval/substitute-reject/${document.docId}";
+                axios.post(url, { comment: comment })
+                    .then(res => { alert(res.data.message); location.href = "/elecApproval/detail/"+ ${document.docId}; })
+                    .catch(err => {
+                        const errorMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : "오류가 발생했습니다.";
+                        alert(errorMessage);
+                    });
             }
             
             function recallDocument(docId) {
                 if(confirm("상신 취소하시겠습니까?")) {
-                    axios.post("/elecApproval/recall/" + docId).then(res => { alert(res.data.message); location.href = '/elecApproval'; });
+                    axios.post("/elecApproval/recall/" + docId)
+                        .then(res => { alert(res.data.message); location.href = '/elecApproval'; })
+                        .catch(err => {
+                            const errorMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : "오류가 발생했습니다.";
+                            alert(errorMessage);
+                        });
                 }
             }
             
@@ -221,7 +256,12 @@
             
             function deleteDocument(docId) {
                 if(confirm("영구 삭제하시겠습니까?")) {
-                    axios.delete("/elecApproval/delete/" + docId).then(res => { alert(res.data.message); location.href = '/elecApproval'; });
+                    axios.delete("/elecApproval/delete/" + docId)
+                        .then(res => { alert(res.data.message); location.href = '/elecApproval'; })
+                        .catch(err => {
+                            const errorMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : "오류가 발생했습니다.";
+                            alert(errorMessage);
+                        });
                 }
             }
 

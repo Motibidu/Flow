@@ -84,6 +84,15 @@
             </li>
             <li><a href="/users" class="${pageContext.request.requestURI eq '/WEB-INF/views/users.jsp' ? 'active' : ''}">사용자 관리</a></li>
             <li><a href="/boards" class="${pageContext.request.requestURI eq '/WEB-INF/views/combinedList.jsp' ? 'active' : ''}">게시판</a></li>
+            <li>
+                <c:set var="isMyPage" value="${fn:contains(pageContext.request.requestURI, 'substitute-approvals')}" />
+                <a href="/users/substitute-approvals" class="${isMyPage ? 'active' : ''}">마이페이지</a>
+                <c:if test="${isMyPage}">
+                    <ul class="submenu">
+                        <li><a href="/users/substitute-approvals">대리 결재자 설정</a></li>
+                    </ul>
+                </c:if>
+            </li>
         </ul>
 	</nav>
 </body>
