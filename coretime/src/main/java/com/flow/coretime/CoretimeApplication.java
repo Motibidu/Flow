@@ -5,8 +5,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 
+import org.springframework.scheduling.annotation.EnableAsync;
+
 @SpringBootApplication
 @EnableCaching
+@EnableAsync
 @MapperScan({ "com.flow.coretime.users.mapper", "com.flow.coretime.board.mapper",
 		"com.flow.coretime.elecApproval.mapper", "com.flow.coretime.notification.mapper" })
 

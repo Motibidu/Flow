@@ -6,13 +6,14 @@ import com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper;
 import com.flow.coretime.elecApproval.mapper.ElecApprovalMapper;
 import com.flow.coretime.elecApproval.mapper.MyApprovalLineMapper;
 import com.flow.coretime.elecApproval.model.*;
+import com.flow.coretime.global.event.NotificationEvent;
 import com.flow.coretime.global.exception.DocumentConflictException;
 import com.flow.coretime.global.exception.UnauthorizedException;
-import com.flow.coretime.notification.NotificationService;
 import com.flow.coretime.users.service.SubstituteApprovalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,17 +27,17 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class ElecApprovalCommandService {
 
     private final ElecApprovalMapper elecApprovalMapper;
     private final ElecApprovalHistoryMapper elecApprovalHistoryMapper;
     private final MyApprovalLineMapper myApprovalLineMapper;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
     private final AttachmentService attachmentService;
     private final ElecApprovalQueryService elecApprovalQueryService; // To get document for auth check
     private final SubstituteApprovalService substituteApprovalService;
 
+    @Transactional
     public void recallDocument(int docId, String userId) {
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
         if (!document.getInitiatorId().equals(userId)) {
@@ -54,6 +55,7 @@ public class ElecApprovalCommandService {
         }
     }
 
+    @Transactional
     public void deleteDocument(int docId) {
 
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
@@ -75,6 +77,7 @@ public class ElecApprovalCommandService {
         log.info("문서 및 결재선 삭제 완료 - 문서ID: {}", docId);
     }
 
+    @Transactional
     @CacheEvict(value = "myApprovalLines", allEntries = true)
     public void saveMyApprovalLine(String userId, MyLineSaveDto myLineSaveDto) {
         MyApprovalLineEntity myApprovalLineEntity = MyApprovalLineEntity.builder()
@@ -99,11 +102,13 @@ public class ElecApprovalCommandService {
         }
     }
 
+    @Transactional
     public void deleteMyApprovalLine(String userId, int lineId) {
         myApprovalLineMapper.deleteMyApprovalLine(userId, lineId);
         myApprovalLineMapper.deleteMyApprovalLineDetail(lineId);
     }
 
+    @Transactional
     public void saveDocumentAndInitialApproval(DocumentReqDto request, List<MultipartFile> files, String loginId) {
 
         // 문서저장
@@ -126,9 +131,9 @@ public class ElecApprovalCommandService {
         // 첫번째 결재자에게 알림 전송
         if (request.getApproverIds() != null && !request.getApproverIds().isEmpty()) {
             String firstApproverId = request.getApproverIds().get(0);
-            notificationService.send(firstApproverId, documentEntity.getTitle(),
+            eventPublisher.publishEvent(new NotificationEvent(this, firstApproverId, documentEntity.getTitle(),
                     "새로운 결재문서가 도착했습니다: " + documentEntity.getDocType().getDisplayName(),
-                    "/elecApproval/detail/" + docId);
+                    "/elecApproval/detail/" + docId));
         }
 
         if (files != null && !files.isEmpty()) {
@@ -136,6 +141,7 @@ public class ElecApprovalCommandService {
         }
     }
 
+    @Transactional
     public void saveTempDocument(DocumentReqDto request, List<MultipartFile> files, String loginId) {
 
         DocumentEntity documentEntity = DocumentEntity.builder()
@@ -157,6 +163,7 @@ public class ElecApprovalCommandService {
         }
     }
 
+    @Transactional
     public void updateTempDocument(int docId, DocumentReqDto request, List<MultipartFile> files,
             List<Long> deleteFileIds, String loginId) {
         DocumentRespDto existingDocument = elecApprovalQueryService.getDocumentById(docId);
@@ -188,9 +195,10 @@ public class ElecApprovalCommandService {
         attachmentService.deleteAttachmentsAndFiles(deleteFileIds);
     }
 
-    public void redraftDocument(int docId, DocumentReqDto request, List<MultipartFile> files, List<Long> deleteFileIds) {
+    @Transactional
+    public void redraftDocument(int docId, DocumentReqDto request, List<MultipartFile> files,
+            List<Long> deleteFileIds) {
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
-
 
         // 문서 유효성 검증
         DocumentStatus status = document.getStatus();
@@ -217,9 +225,9 @@ public class ElecApprovalCommandService {
 
         // 첫번째 결재자에게 알림 전송
         String firstApproverId = request.getApproverIds().get(0);
-        notificationService.send(firstApproverId, document.getTitle(),
+        eventPublisher.publishEvent(new NotificationEvent(this, firstApproverId, document.getTitle(),
                 "재상신된 결재문서가 도착했습니다: " + document.getDocType().getDisplayName(),
-                "/elecApproval/detail/" + docId);
+                "/elecApproval/detail/" + docId));
     }
 
     private void createApprovalLine(int docId, List<String> approverIds) {
@@ -245,10 +253,6 @@ public class ElecApprovalCommandService {
         ElecApprovalHistoryRespDto currentApprovalHistory = elecApprovalHistoryMapper
                 .getCurrentApprovalHistory(docId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 결재 대기 중인 상태가 아닙니다."));
-
-        if (!currentApprovalHistory.getApproverId().equals(userId)) {
-            throw new UnauthorizedException("결재 순서가 아니거나 결재 권한이 없습니다.");
-        }
 
         currentApprovalHistory.setApprovalStatus(ApprovalStatus.APPROVED);
         currentApprovalHistory.setComments(comment);
@@ -290,15 +294,18 @@ public class ElecApprovalCommandService {
                             nextApproval.setApprovalStatus(ApprovalStatus.PENDING);
                             elecApprovalHistoryMapper.updateApprovalHistory(nextApproval);
                             document.setStatus(DocumentStatus.IN_PROGRESS);
-                            notificationService.send(nextApproval.getApproverId(), document.getTitle(),
-                                    "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
-                                    "/elecApproval/detail/" + document.getDocId());
+                            eventPublisher.publishEvent(
+                                    new NotificationEvent(this, nextApproval.getApproverId(), document.getTitle(),
+                                            "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
+                                            "/elecApproval/detail/" + document.getDocId()));
                         },
                         () -> {
                             document.setStatus(DocumentStatus.APPROVED);
-                            notificationService.send(document.getInitiatorId(), document.getTitle(),
-                                    "결재 완료: '" + document.getDocType().getDisplayName() + "' 문서가 최종 승인되었습니다! 🎉",
-                                    "/elecApproval/detail/" + document.getDocId());
+                            eventPublisher.publishEvent(
+                                    new NotificationEvent(this, document.getInitiatorId(), document.getTitle(),
+                                            "결재 완료: '" + document.getDocType().getDisplayName()
+                                                    + "' 문서가 최종 승인되었습니다! 🎉",
+                                            "/elecApproval/detail/" + document.getDocId()));
                         });
 
         document.setUpdatedAt(new Date());
@@ -370,9 +377,9 @@ public class ElecApprovalCommandService {
             throw new DocumentConflictException(message);
         }
 
-        notificationService.send(document.getInitiatorId(), document.getTitle(),
+        eventPublisher.publishEvent(new NotificationEvent(this, document.getInitiatorId(), document.getTitle(),
                 "결재 반려: '" + document.getDocType().getDisplayName() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
-                "/elecApproval/detail/" + document.getDocId());
+                "/elecApproval/detail/" + document.getDocId()));
     }
 
     private void validateDocumentIsPendingOrInProgress(DocumentRespDto document) {

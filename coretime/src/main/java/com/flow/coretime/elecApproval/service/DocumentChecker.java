@@ -4,6 +4,8 @@ import com.flow.coretime.elecApproval.mapper.ElecApprovalHistoryMapper;
 import com.flow.coretime.elecApproval.model.AttachmentEntity;
 import com.flow.coretime.elecApproval.model.DocumentRespDto;
 import com.flow.coretime.elecApproval.model.ElecApprovalHistoryRespDto;
+import com.flow.coretime.global.exception.UnauthorizedException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +34,7 @@ public class DocumentChecker {
     public boolean isCurrentApprover(Integer docId, String username) {
         ElecApprovalHistoryRespDto currentPendingApproval = elecApprovalHistoryMapper
                 .getCurrentApprovalHistory(docId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 결재 대기 중인 상태가 아닙니다."));
+                .orElseThrow(() -> new UnauthorizedException(HttpStatus.BAD_REQUEST, "결재 순서가 아니거나 결재 권한이 없습니다."));
         return currentPendingApproval.getApproverId().equals(username);
     }
 
