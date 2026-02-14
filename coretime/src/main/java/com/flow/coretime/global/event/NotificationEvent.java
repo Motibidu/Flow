@@ -6,13 +6,15 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class NotificationEvent extends ApplicationEvent {
 
+    private final int docId;
     private final String userId;
     private final String title;
     private final String message;
     private final String link;
 
-    public NotificationEvent(Object source, String userId, String title, String message, String link) {
+    public NotificationEvent(Object source, int docId, String userId, String title, String message, String link) {
         super(source);
+        this.docId= docId;
         this.userId = userId;
         this.title = title;
         this.message = message;

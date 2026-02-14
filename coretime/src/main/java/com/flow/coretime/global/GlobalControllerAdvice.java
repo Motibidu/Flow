@@ -1,25 +1,33 @@
 package com.flow.coretime.global;
 
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.ui.Model;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.ModelAndView;
 
-@ControllerAdvice
+import com.flow.coretime.global.exception.UnauthorizedException;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@ControllerAdvice("com.flow.coretime")
 public class GlobalControllerAdvice {
 
-        @ModelAttribute
-        public void addAttributes(Model model) {
-                // Spring Security를 사용 중이라면 SecurityContext에서 정보를 가져옵니다.
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    @ExceptionHandler(UnauthorizedException.class)
+    public ModelAndView handleUnauthorizedException(UnauthorizedException e) {
+        log.warn("권한이 없는 사용자의 접근: {}", e.getMessage());
+        ModelAndView mav = new ModelAndView();
+        mav.addObject("errorMessage", e.getMessage());
+        mav.setViewName("error/unauthorized");
+        return mav;
+    }
 
-                if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
-                        // JSP에서 사용할 변수명과 일치하게 데이터를 담습니다.
-                        model.addAttribute("currentUserId", auth.getName());
-                        model.addAttribute("currentUserAuthority",
-                                        auth.getAuthorities().stream().findFirst().get().getAuthority().trim());
-                }
-        }
+    @ExceptionHandler(AccessDeniedException.class)
+    public ModelAndView handleUnauthorizedException(AccessDeniedException e) {
+        log.warn("권한이 없는 사용자의 접근: {}", e.getMessage());
+        ModelAndView mav = new ModelAndView();
+        mav.addObject("errorMessage", e.getMessage());
+        mav.setViewName("error/unauthorized");
+        return mav;
+    }
 }

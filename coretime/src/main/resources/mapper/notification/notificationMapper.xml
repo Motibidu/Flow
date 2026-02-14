@@ -8,9 +8,9 @@
                 useGeneratedKeys="true" 
                 keyProperty="notifId">
                 INSERT INTO notifications (
-                        recipient_id, title, message, target_url, is_read, created_at
+                        doc_id, recipient_id, title, message, target_url, is_read, created_at
                 ) VALUES (
-                        #{recipientId}, #{title}, #{message}, #{targetUrl}, #{isRead}, #{createdAt}
+                        #{docId}, #{recipientId}, #{title}, #{message}, #{targetUrl}, #{isRead}, #{createdAt}
                 )
         </insert>
 

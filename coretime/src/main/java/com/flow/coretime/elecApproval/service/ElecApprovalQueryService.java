@@ -46,7 +46,7 @@ public class ElecApprovalQueryService {
         return documentRespDto;
     }
 
-    @Cacheable(value = "myApprovalLines", key = "#p0")
+    // @Cacheable(value = "myApprovalLines", key = "#p0")
     public List<MyLineResponseDto> findMyApprovalLines(String userId) {
         log.info("Cache Miss - findMyApprovalLines DB 조회: {}", userId);
         return myApprovalLineMapper.findMyApprovalLines(userId);

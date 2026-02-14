@@ -71,7 +71,7 @@
                         let html = '<div class="d-flex justify-content-between">' +
                                    '  <div>' +
                                    (isUnread ? '    <span class="unread-dot"></span>' : '') +
-                                   '    <span>' + item.notifId + '. </span>' +
+                                   '    <span>' + item.docId + '. </span>' +
                                    '    <span class="fw-medium">' + item.message + '</span>' +
                                    '  </div>' +
                                    '  <span class="notif-time">' + formatDate(item.createdAt) + '</span>' +

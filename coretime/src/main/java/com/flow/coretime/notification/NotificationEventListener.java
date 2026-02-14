@@ -23,6 +23,7 @@ public class NotificationEventListener {
     public void handleNotificationEvent(NotificationEvent event) {
         try {
             notificationService.send(
+                    event.getDocId(),
                     event.getUserId(),
                     event.getTitle(),
                     event.getMessage(),

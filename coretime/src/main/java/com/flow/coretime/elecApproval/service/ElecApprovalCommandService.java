@@ -45,13 +45,15 @@ public class ElecApprovalCommandService {
         }
         validateDocumentIsPendingOrInProgress(document);
 
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+        }
+
         int updatedRows = elecApprovalMapper.recallDocument(document.getDocId(), userId, document.getVersion());
 
         if (updatedRows == 0) {
-            DocumentRespDto currentDocument = elecApprovalQueryService.getDocumentById(docId);
-            String message = String.format("다른 사용자에 의해 문서가 이미 처리되어 작업을 완료할 수 없습니다. (현재 상태: %s)",
-                    currentDocument.getStatus().getDisplayName());
-            throw new DocumentConflictException(message);
+            handleOptimisticLockFailure(docId);
         }
     }
 
@@ -131,7 +133,7 @@ public class ElecApprovalCommandService {
         // 첫번째 결재자에게 알림 전송
         if (request.getApproverIds() != null && !request.getApproverIds().isEmpty()) {
             String firstApproverId = request.getApproverIds().get(0);
-            eventPublisher.publishEvent(new NotificationEvent(this, firstApproverId, documentEntity.getTitle(),
+            eventPublisher.publishEvent(new NotificationEvent(this, docId, firstApproverId, documentEntity.getTitle(),
                     "새로운 결재문서가 도착했습니다: " + documentEntity.getDocType().getDisplayName(),
                     "/elecApproval/detail/" + docId));
         }
@@ -225,7 +227,7 @@ public class ElecApprovalCommandService {
 
         // 첫번째 결재자에게 알림 전송
         String firstApproverId = request.getApproverIds().get(0);
-        eventPublisher.publishEvent(new NotificationEvent(this, firstApproverId, document.getTitle(),
+        eventPublisher.publishEvent(new NotificationEvent(this, docId, firstApproverId, document.getTitle(),
                 "재상신된 결재문서가 도착했습니다: " + document.getDocType().getDisplayName(),
                 "/elecApproval/detail/" + docId));
     }
@@ -246,7 +248,7 @@ public class ElecApprovalCommandService {
     }
 
     @Transactional
-    public void approveApproval(int docId, String comment, String userId) {
+    public void approveDocument(int docId, String comment) {
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
         validateDocumentIsPendingOrInProgress(document);
 
@@ -263,7 +265,7 @@ public class ElecApprovalCommandService {
     }
 
     @Transactional
-    public void substituteApproveApproval(int docId, String comment, String actingUserId) {
+    public void substituteApprove(int docId, String comment, String actingUserId) {
         DocumentRespDto document = elecApprovalQueryService.getDocumentById(docId);
         validateDocumentIsPendingOrInProgress(document);
 
@@ -288,6 +290,7 @@ public class ElecApprovalCommandService {
 
     private void processApprovalContinuation(DocumentRespDto document,
             ElecApprovalHistoryRespDto currentApprovalHistory) {
+        int docId = document.getDocId();
         elecApprovalHistoryMapper.getNextApprovalHistory(document.getDocId(), currentApprovalHistory.getApprovalOrder())
                 .ifPresentOrElse(
                         nextApproval -> {
@@ -295,14 +298,15 @@ public class ElecApprovalCommandService {
                             elecApprovalHistoryMapper.updateApprovalHistory(nextApproval);
                             document.setStatus(DocumentStatus.IN_PROGRESS);
                             eventPublisher.publishEvent(
-                                    new NotificationEvent(this, nextApproval.getApproverId(), document.getTitle(),
+                                    new NotificationEvent(this, docId, nextApproval.getApproverId(),
+                                            document.getTitle(),
                                             "결재 대기: '" + document.getDocType() + "' 문서의 승인 차례입니다.",
                                             "/elecApproval/detail/" + document.getDocId()));
                         },
                         () -> {
                             document.setStatus(DocumentStatus.APPROVED);
                             eventPublisher.publishEvent(
-                                    new NotificationEvent(this, document.getInitiatorId(), document.getTitle(),
+                                    new NotificationEvent(this, docId, document.getInitiatorId(), document.getTitle(),
                                             "결재 완료: '" + document.getDocType().getDisplayName()
                                                     + "' 문서가 최종 승인되었습니다! 🎉",
                                             "/elecApproval/detail/" + document.getDocId()));
@@ -311,10 +315,7 @@ public class ElecApprovalCommandService {
         document.setUpdatedAt(new Date());
         int updatedRows = elecApprovalMapper.updateDocumentStatus(document);
         if (updatedRows == 0) {
-            DocumentRespDto currentDocument = elecApprovalQueryService.getDocumentById(document.getDocId());
-            String message = String.format("다른 사용자에 의해 문서가 이미 처리되어 작업을 완료할 수 없습니다. (현재 상태: %s)",
-                    currentDocument.getStatus().getDisplayName());
-            throw new DocumentConflictException(message);
+            handleOptimisticLockFailure(document.getDocId());
         }
     }
 
@@ -367,17 +368,15 @@ public class ElecApprovalCommandService {
 
     private void processRejectionContinuation(DocumentRespDto document,
             ElecApprovalHistoryRespDto currentApprovalHistory) {
+        int docId = document.getDocId();
         document.setStatus(DocumentStatus.REJECTED);
         document.setUpdatedAt(new Date());
         int updatedRows = elecApprovalMapper.updateDocumentStatus(document);
         if (updatedRows == 0) {
-            DocumentRespDto currentDocument = elecApprovalQueryService.getDocumentById(document.getDocId());
-            String message = String.format("다른 사용자에 의해 문서가 이미 처리되어 작업을 완료할 수 없습니다. (현재 상태: %s)",
-                    currentDocument.getStatus().getDisplayName());
-            throw new DocumentConflictException(message);
+            handleOptimisticLockFailure(docId);
         }
 
-        eventPublisher.publishEvent(new NotificationEvent(this, document.getInitiatorId(), document.getTitle(),
+        eventPublisher.publishEvent(new NotificationEvent(this, docId, document.getInitiatorId(), document.getTitle(),
                 "결재 반려: '" + document.getDocType().getDisplayName() + "' 문서가 반려되었습니다. 사유를 확인해 주세요. ⚠️",
                 "/elecApproval/detail/" + document.getDocId()));
     }
@@ -388,5 +387,12 @@ public class ElecApprovalCommandService {
             throw new IllegalStateException(
                     "문서가 이미 처리되었거나 취소되어 작업을 진행할 수 없습니다. (현재 상태: " + status.getDisplayName() + ")");
         }
+    }
+
+    private void handleOptimisticLockFailure(int docId) {
+        DocumentRespDto currentDocument = elecApprovalQueryService.getDocumentById(docId);
+        String message = String.format("작업을 처리하는 동안 문서 상태가 변경되었습니다. 페이지를 새로고침하여 최신 상태를 확인해주세요. (현재 상태: %s)",
+                currentDocument.getStatus().getDisplayName());
+        throw new DocumentConflictException(message);
     }
 }

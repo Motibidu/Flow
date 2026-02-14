@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class NotificationDTO {
         private Long notifId; // 알림 고유 번호 (PK)
+        private int docId; // 문서 고유 번호
         private String recipientId; // 수신자 아이디
         private String title;
         private String message; // 알림 메시지 내용
@@ -23,8 +24,10 @@ public class NotificationDTO {
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
         private LocalDateTime createdAt; // 알림 생성 시간
 
-        public static NotificationDTO create(String recipientId, String title, String message, String targetUrl) {
+        public static NotificationDTO create(int docId, String recipientId, String title, String message,
+                        String targetUrl) {
                 return NotificationDTO.builder()
+                                .docId(docId)
                                 .recipientId(recipientId)
                                 .title(title)
                                 .message(message)

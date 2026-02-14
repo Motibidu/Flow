@@ -48,10 +48,10 @@ public class NotificationService {
         return emitter;
     }
 
-    public void send(String userId, String title, String message, String url) {
+    public void send(int docId, String userId, String title, String message, String url) {
 
         // 1. DB에 먼저 저장 (영속성 확보)
-        NotificationDTO notifcationDto = NotificationDTO.create(userId, title, message, url);
+        NotificationDTO notifcationDto = NotificationDTO.create(docId, userId, title, message, url);
 
         notificationMapper.insertNotification(notifcationDto);
 
@@ -60,13 +60,13 @@ public class NotificationService {
         if (emitter != null) {
             try {
                 Map<String, String> data = new HashMap<>();
-                data.put("notifId", String.valueOf(notifcationDto.getNotifId()));
+                data.put("docId", String.valueOf(docId));
                 data.put("message", message);
                 data.put("targetUrl", url);
 
                 emitter.send(SseEmitter.event()
                         .name("notification")
-                        .data(data));
+                        .data(data, MediaType.APPLICATION_JSON));
             } catch (IOException e) {
                 emitters.remove(userId);
                 log.error("알림 전송 실패", e);

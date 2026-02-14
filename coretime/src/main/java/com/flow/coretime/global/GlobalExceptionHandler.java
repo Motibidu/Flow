@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import com.flow.coretime.common.dto.ApiResponse;
+import com.flow.coretime.global.exception.DocumentConflictException;
+import com.flow.coretime.global.exception.UnauthorizedException;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -40,22 +43,31 @@ public class GlobalExceptionHandler {
                                 .body(ApiResponse.error("요청하신 페이지를 찾을 수 없습니다."));
         }
 
-        @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+        @ExceptionHandler(AccessDeniedException.class)
         public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
-                        org.springframework.security.access.AccessDeniedException e) {
+                        AccessDeniedException e) {
                 log.warn("접근이 거부되었습니다: {}", e.getMessage());
                 return ResponseEntity
                                 .status(HttpStatus.FORBIDDEN)
                                 .body(ApiResponse.error("접근 권한이 없습니다."));
         }
 
-        @ExceptionHandler(com.flow.coretime.global.exception.UnauthorizedException.class)
+        @ExceptionHandler(UnauthorizedException.class)
         public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(
-                        com.flow.coretime.global.exception.UnauthorizedException e) {
+                        UnauthorizedException e) {
                 log.warn("권한이 없습니다: {}", e.getMessage());
                 return ResponseEntity
                                 .status(HttpStatus.FORBIDDEN)
                                 .body(ApiResponse.error("권한이 없습니다: " + e.getMessage()));
+        }
+
+        @ExceptionHandler(DocumentConflictException.class)
+        public ResponseEntity<ApiResponse<Void>> handleDocumentConflictException(
+                        DocumentConflictException e) {
+                log.warn("문서 충돌이 발생했습니다: {}", e.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(ApiResponse.error(e.getMessage()));
         }
 
         @ExceptionHandler(Exception.class)
@@ -65,4 +77,5 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(ApiResponse.error("서버 오류가 발생했습니다: " + e.getMessage()));
         }
+
 }

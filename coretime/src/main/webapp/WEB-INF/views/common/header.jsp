@@ -1,7 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 
 <script>
     console.log("SSE Notification System Loaded");
@@ -22,7 +21,8 @@
             // 2. 서버에서 보낸 'notification' 이벤트 수신
             eventSource.addEventListener("notification", function(event) {
                 const data = JSON.parse(event.data);
-                showToast(data.notifId, data.message, data.targetUrl);
+                console.log("data: ", data);
+                showToast(data.docId, data.message, data.targetUrl);
 
                 const badge = document.getElementById('notif-badge');
                 if (badge) badge.style.display = 'block';
