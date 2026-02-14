@@ -25,14 +25,14 @@
 ### **"김사원"" 검색결과**
 ![bandicam 2026-02-14 15-55-32-267](https://github.com/user-attachments/assets/d00a4496-9003-4828-8dba-3cc618ed0f7c)
 
-## **문서 상세 페이지**
+### **문서 상세 페이지**
 ![bandicam 2026-02-14 15-54-54-281](https://github.com/user-attachments/assets/d93ec0fa-b988-4a6d-aaa7-e28da96fa1ae)
 
 
-## **결재자 시점 상세 페이지**
+### **결재자 시점 상세 페이지**
 ![bandicam 2026-02-14 15-57-02-117](https://github.com/user-attachments/assets/f1a9d2bc-a89f-4109-9023-d46c3f737703)
 
-## Spring Event 기반의 트랜잭션 분리 및 비동기 알림 처리
+### Spring Event 기반의 트랜잭션 분리 및 비동기 알림 처리
 ![bandicam 2026-02-14 15-45-34-670](https://github.com/user-attachments/assets/0352ab9f-eb01-41b9-ad1c-d375334088b0)
 
 ### **최근 알림 수신 목록**
