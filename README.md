@@ -29,11 +29,12 @@
 ![bandicam 2026-02-14 15-54-54-281](https://github.com/user-attachments/assets/d93ec0fa-b988-4a6d-aaa7-e28da96fa1ae)
 
 
-### **결재자 시점 상세 페이지**
+### **결재자 시점 상세 페이지(승인 및 반려)**
 ![bandicam 2026-02-14 15-57-02-117](https://github.com/user-attachments/assets/f1a9d2bc-a89f-4109-9023-d46c3f737703)
 
 ### **대리결재자 설정**
-![Uploading bandicam 2026-02-14 17-24-32-774.jpg…]()
+![bandicam 2026-02-14 17-24-32-774](https://github.com/user-attachments/assets/91dc63f7-d08b-4b3a-99c0-b73935ab270f)
+
 
 ### Spring Event 기반의 트랜잭션 분리 및 비동기 알림 처리
 ![bandicam 2026-02-14 15-45-34-670](https://github.com/user-attachments/assets/0352ab9f-eb01-41b9-ad1c-d375334088b0)
