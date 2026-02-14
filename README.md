@@ -22,7 +22,7 @@
 ![bandicam 2026-02-14 15-54-29-610](https://github.com/user-attachments/assets/15705bdd-96ab-4b05-8d31-6ed51243b920)
 
 
-### **"김사원"" 검색결과**
+### **"김사원" 검색결과**
 ![bandicam 2026-02-14 15-55-32-267](https://github.com/user-attachments/assets/d00a4496-9003-4828-8dba-3cc618ed0f7c)
 
 ### **문서 상세 페이지**
