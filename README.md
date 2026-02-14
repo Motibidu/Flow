@@ -18,7 +18,7 @@
 ### **저장한 결재선 불러오기**
 ![bandicam 2026-02-14 15-53-43-701](https://github.com/user-attachments/assets/21868241-fdae-4b86-bd30-355a875e78b6)
 
-### **내가 기안한 진행중 문서 리스트**
+### **문서 리스트(임시저장, 진행중, 결재차례, 반려 및 취소, 완료 동일 양식)**
 ![bandicam 2026-02-14 15-54-29-610](https://github.com/user-attachments/assets/15705bdd-96ab-4b05-8d31-6ed51243b920)
 
 
