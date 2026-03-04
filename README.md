@@ -7,6 +7,8 @@
 **Frontend**: JSP  
 **etc**: Server-Sent-Events
 
+## ✨ Main Features
+
 ### 📝 전자결재
 - 결재 문서 작성 및 결재 라인 설정
 - 순차적 승인/반려 처리
