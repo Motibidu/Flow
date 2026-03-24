@@ -11,8 +11,8 @@
 
 | Table | Description |
 | :--- | :--- |
-| **my_approval_line** | 사용자가 저장한 결재선으로 불러오기에 사용됩니다.   |
-| **
+| **my_approval_line** | 사용자가 저장한 결재선입니다.   |
+| **substitute_approval** | 대리 결재 리스트입니다. |
 
 ## 기술 스택
 | Category | Tech Stack |
