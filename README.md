@@ -9,7 +9,6 @@
 
 | Table | Description |
 | :--- | :--- |
-| **approval_line** | 문서(documents)에 할당된 결재선 입니다.  |
 | **my_approval_line** | 사용자가 저장한 결재선으로 불러오기에 사용됩니다.   |
 
 ## 기술 스택
